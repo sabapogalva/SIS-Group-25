@@ -8,3 +8,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </React.StrictMode>
 );
+
+// to run the project with docker: -Saba
+// docker run --rm -p 5173:5173 -v "${PWD}:/app" -w /app node:lts sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
