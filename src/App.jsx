@@ -34,7 +34,7 @@ const sampleEvent = {
 
 function Avatar({ name, variant = 'neutral' }) {
   const styles = variant === 'pro'
-    ? 'bg-violet-100 text-violet-700 border-violet-200'
+    ? 'bg-orange-100 text-orange-700 border-orange-200'
     : 'bg-neutral-100 text-neutral-500 border-neutral-200';
   return (
     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs border shrink-0 ${styles}`}>
@@ -50,7 +50,7 @@ function PresenceStrip() {
         {PRESENCE_USERS.map((user, i) => (
           <div
             key={user}
-            className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center text-violet-700 font-bold text-[9px] border-2 border-white"
+            className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center text-orange-700 font-bold text-[9px] border-2 border-white"
             style={{ marginRight: i < PRESENCE_USERS.length - 1 ? '-5px' : '0' }}
           >
             {initials(user)}
@@ -66,28 +66,29 @@ function PresenceStrip() {
 
 function EventCard({ item, onOpen }) {
   return (
-    <div className="bg-white border border-neutral-100 border-l-[3px] border-l-violet-500 rounded-2xl p-4 hover:border-neutral-200 hover:border-l-violet-500 transition-colors">
+    <div className="bg-white border border-neutral-100 border-l-[3px] border-l-orange-500 rounded-2xl p-4 hover:border-neutral-200 hover:border-l-orange-500 transition-colors">
       <div className="flex justify-between items-start mb-2.5">
         <div className="flex gap-2.5 items-start">
           <Avatar name={item.author} variant="pro" />
           <div>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-violet-700 bg-violet-50 rounded px-1.5 py-0.5 mb-1">
-              Campus event
-            </span>
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-orange-700 bg-orange-50 rounded px-1.5 py-0.5 mb-1">
+             Campus event            
+             
+             </span>
             <h3 className="text-sm font-bold text-neutral-950 leading-tight">{item.title}</h3>
           </div>
         </div>
         <span className="text-[11px] text-neutral-400 whitespace-nowrap pt-0.5 ml-2">{item.time}</span>
       </div>
       <p className="text-xs text-neutral-500 flex items-center gap-1.5 ml-10 mb-2.5">
-        <span className="text-violet-500">📍</span>
+        <span className="text-orange-500">📍</span>
         {item.location}
       </p>
       <div className="flex justify-between items-center ml-10 pt-2.5 border-t border-neutral-100">
         <span className="text-[11px] text-neutral-400">
           Hosted by <span className="font-medium text-neutral-600">{item.author}</span>
         </span>
-        <button onClick={onOpen} className="text-[11px] font-semibold text-violet-600 hover:text-violet-800 transition-colors">
+        <button onClick={onOpen} className="text-[11px] font-semibold text-orange-600 hover:text-orange-800 transition-colors">
           RSVP →
         </button>
       </div>
@@ -143,7 +144,7 @@ function StatusInput({ onPost }) {
         <button
           type="submit"
           disabled={!text.trim()}
-          className="bg-violet-600 hover:bg-violet-700 disabled:bg-violet-200 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors"
+          className="bg-orange-600 hover:bg-orange-700 disabled:bg-orange-200 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors"
         >
           Post status
         </button>
@@ -163,10 +164,10 @@ function EventForm({ onSubmit, onCancel }) {
     onSubmit({ title: title.trim(), location: location.trim(), time: time.trim() || 'TBD' });
   };
 
-  const inputClass = "w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-neutral-50 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all font-[inherit]";
+  const inputClass = "w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-neutral-50 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all font-[inherit]";
 
   return (
-    <div className="bg-white border border-violet-200 rounded-2xl p-5">
+    <div className="bg-white border border-orange-200 rounded-2xl p-5">
       <h2 className="text-sm font-bold text-neutral-950 mb-0.5">Host a campus event</h2>
       <p className="text-xs text-neutral-400 mb-4">Open it up — anyone nearby can see it and RSVP.</p>
       <div className="space-y-3">
@@ -218,7 +219,7 @@ function EventForm({ onSubmit, onCancel }) {
           type="button"
           onClick={handleSubmit}
           disabled={!title.trim() || !location.trim()}
-          className="flex-[2] bg-violet-600 hover:bg-violet-700 disabled:bg-violet-200 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+          className="flex-[2] bg-orange-600 hover:bg-orange-700 disabled:bg-orange-200 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
         >
           Publish event
         </button>
@@ -241,8 +242,8 @@ function Header({ page, onBack, showEventForm, onToggle }) {
             </button>
           ) : (
             <>
-              <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center border border-violet-200">
-                <span className="text-violet-700 font-bold text-sm">R</span>
+              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center border border-orange-200">
+                <span className="text-orange-700 font-bold text-sm">R</span>
               </div>
               <div>
                 <p className="text-sm font-bold tracking-tight text-neutral-950 leading-none">Recess</p>
@@ -256,15 +257,15 @@ function Header({ page, onBack, showEventForm, onToggle }) {
             <>
               <div className="flex items-center gap-1.5 text-xs text-neutral-500 bg-white border border-neutral-100 rounded-full px-3 py-1">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-violet-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-orange-500" />
                 </span>
                 <span className="sr-only">Live — </span>
                 UTS Campus
               </div>
               <button
                 onClick={onToggle}
-                className="text-xs bg-violet-600 hover:bg-violet-700 text-white font-semibold px-3.5 py-2 rounded-xl transition-colors"
+                className="text-xs bg-orange-600 hover:bg-orange-700 text-white font-semibold px-3.5 py-2 rounded-xl transition-colors"
               >
                 {showEventForm ? '✕ Cancel' : '+ Host event'}
               </button>
@@ -314,7 +315,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-violet-50 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-orange-50 p-4 md:p-8 font-sans">
       <div className="max-w-xl mx-auto">
 
     <Header
