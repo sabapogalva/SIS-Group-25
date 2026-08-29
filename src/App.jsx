@@ -46,7 +46,7 @@ export default function App() {
     setPage('event');
   };
 
-const currentEvent = selectedEvent ?? SAMPLE_EVENT;
+  const currentEvent = selectedEvent ?? SAMPLE_EVENT;
 
   return (
     <div className="min-h-screen bg-orange-50 p-4 md:p-8 font-sans">
