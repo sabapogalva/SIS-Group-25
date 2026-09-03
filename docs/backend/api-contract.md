@@ -59,7 +59,10 @@ This document defines the response shape for (2). Direct client queries
 | Code | Meaning |
 |---|---|
 | `invalid_domain` | Email domain isn't in `organisation_domains` |
+| `consent_required` | Terms and Privacy Policy consent was not provided |
 | `not_verified` | Account exists but email isn't verified yet |
+| `unsupported_account_type` | The domain resolves to an organisation type that cannot join the MVP |
+| `forbidden` | A protected account/profile field cannot be changed by the client |
 | `blocked` | Action blocked due to a block relationship |
 | `already_connected` | Connection request rejected -- already connected |
 | `request_pending` | Duplicate connection/join request |

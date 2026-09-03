@@ -9,6 +9,7 @@ insert into public.organisations (id, name, type) values
 on conflict (id) do nothing;
 
 insert into public.organisation_domains (organisation_id, domain) values
+  ('00000000-0000-0000-0000-000000000001', 'uts.edu.au'),
   ('00000000-0000-0000-0000-000000000001', 'student.uts.edu.au'),
   ('00000000-0000-0000-0000-000000000002', 'examplecompany.com')
 on conflict (domain) do nothing;
