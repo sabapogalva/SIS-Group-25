@@ -11,8 +11,8 @@ language sql
 immutable
 as $$
   select case
-    when p_email is null
-      or p_email !~* '^[^@[:space:]]+@[^@[:space:]]+$'
+    when trim(p_email) is null
+      or trim(p_email) !~* '^[^@[:space:]]+@[^@[:space:]]+$'
       then null
     else lower(split_part(trim(p_email), '@', 2))
   end
