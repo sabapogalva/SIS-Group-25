@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(13);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_column('public', 'profiles', 'account_status', 'profiles has account status');
