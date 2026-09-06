@@ -1,42 +1,60 @@
 import { useEffect } from 'react';
 import {
+  ImageOverlay,
   MapContainer,
   Marker,
   Popup,
-  TileLayer,
   useMap,
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix Leaflet marker icons when using React/Vite
-delete L.Icon.Default.prototype._getIconUrl;
+const CAMPUS_MAP_URL =
+  "/assets/uts-campus-map.avif";
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl:
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl:
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+const IMAGE_WIDTH = 1024;
+const IMAGE_HEIGHT = 1024;
+
+// Leaflet's simple coordinate system uses [y, x]
+const IMAGE_BOUNDS = [
+  [0, 0],
+  [IMAGE_HEIGHT, IMAGE_WIDTH],
+];
+
+const orangeEventIcon = L.divIcon({
+  className: 'custom-event-marker',
+  html: `
+    <div style="
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      background: #f97316;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    "></div>
+  `,
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor: [0, -12],
 });
 
-const UTS_CENTER = [-33.8832, 151.2006];
-
-function MapUpdater({ events }) {
+function RecenterMap({ events }) {
   const map = useMap();
 
   useEffect(() => {
-    if (events.length === 0) return;
+    if (events.length === 0) {
+      map.setView([IMAGE_HEIGHT / 2, IMAGE_WIDTH / 2], -1);
+      return;
+    }
 
-    const bounds = events.map(event => [
-      event.latitude,
-      event.longitude,
+    const eventPoints = events.map(event => [
+      event.mapY ?? IMAGE_HEIGHT / 2,
+      event.mapX ?? IMAGE_WIDTH / 2,
     ]);
 
-    map.fitBounds(bounds, {
-      padding: [40, 40],
-      maxZoom: 17,
+    map.fitBounds(eventPoints, {
+      padding: [80, 80],
+      maxZoom: 0,
     });
   }, [events, map]);
 
@@ -44,11 +62,11 @@ function MapUpdater({ events }) {
 }
 
 export default function CampusMap({ events = [] }) {
-  const eventLocations = events.filter(
+  const campusEvents = events.filter(
     event =>
       event.type === 'event' &&
-      typeof event.latitude === 'number' &&
-      typeof event.longitude === 'number'
+      typeof event.mapX === 'number' &&
+      typeof event.mapY === 'number'
   );
 
   return (
@@ -64,31 +82,35 @@ export default function CampusMap({ events = [] }) {
           </h2>
 
           <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-600">
-            {eventLocations.length}{' '}
-            {eventLocations.length === 1 ? 'event' : 'events'}
+            {campusEvents.length}{' '}
+            {campusEvents.length === 1 ? 'event' : 'events'}
           </span>
         </div>
       </div>
 
-      <div className="h-[520px]">
+      <div className="h-[520px] bg-neutral-100">
         <MapContainer
-          center={UTS_CENTER}
-          zoom={16}
+          crs={L.CRS.Simple}
+          center={[IMAGE_HEIGHT / 2, IMAGE_WIDTH / 2]}
+          zoom={-1}
+          minZoom={-2}
+          maxZoom={1}
+          zoomControl
           scrollWheelZoom
           className="h-full w-full"
         >
-          {/* Aerial/satellite imagery */}
-          <TileLayer
-            attribution="Tiles &copy; Esri"
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          <ImageOverlay
+            url={CAMPUS_MAP_URL}
+            bounds={IMAGE_BOUNDS}
           />
 
-          <MapUpdater events={eventLocations} />
+          <RecenterMap events={campusEvents} />
 
-          {eventLocations.map(event => (
+          {campusEvents.map(event => (
             <Marker
               key={event.id}
-              position={[event.latitude, event.longitude]}
+              position={[event.mapY, event.mapX]}
+              icon={orangeEventIcon}
             >
               <Popup>
                 <div className="min-w-[180px]">
@@ -114,7 +136,7 @@ export default function CampusMap({ events = [] }) {
         </MapContainer>
       </div>
 
-      {eventLocations.length === 0 && (
+      {campusEvents.length === 0 && (
         <p className="border-t border-orange-100 px-5 py-3 text-center text-xs text-neutral-400">
           No events have been placed on the map yet.
         </p>
