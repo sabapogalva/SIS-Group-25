@@ -30,8 +30,8 @@ export default function App() {
     title,
     location,
     time,
-    latitude,
-    longitude,
+    mapX,
+    mapY,
   }) => {
     setFeed(prev => [
       {
@@ -41,8 +41,8 @@ export default function App() {
         location,
         time,
         author: CURRENT_USER,
-        latitude,
-        longitude,
+        mapX,
+        mapY,
       },
       ...prev,
     ]);

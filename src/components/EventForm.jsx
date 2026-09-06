@@ -9,8 +9,9 @@ export default function EventForm({ onSubmit, onCancel }) {
   const [time, setTime] = useState('');
 
   // Default location: UTS campus
-  const [latitude, setLatitude] = useState('-33.8832');
-  const [longitude, setLongitude] = useState('151.2006');
+  const [mapX, setMapX] = useState('512');
+  const [mapY, setMapY] = useState('512');
+  
 
   const handleSubmit = () => {
     if (!title.trim() || !location.trim()) return;
@@ -34,9 +35,10 @@ export default function EventForm({ onSubmit, onCancel }) {
       title: title.trim(),
       location: location.trim(),
       time: time.trim() || 'TBD',
-      latitude: latitudeNumber,
-      longitude: longitudeNumber,
+      mapX: Number(mapX),
+      mapY: Number(mapY),
     });
+    
   };
 
   const formIsInvalid =
@@ -102,36 +104,37 @@ export default function EventForm({ onSubmit, onCancel }) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-              Latitude
-            </label>
+  <div>
+    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+      Map X
+    </label>
 
-            <input
-              type="number"
-              value={latitude}
-              onChange={event => setLatitude(event.target.value)}
-              placeholder="-33.8832"
-              step="any"
-              className={inputClass}
-            />
-          </div>
+    <input
+      type="number"
+      value={mapX}
+      onChange={event => setMapX(event.target.value)}
+      min="0"
+      max="1024"
+      className={inputClass}
+    />
+  </div>
 
-          <div>
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-              Longitude
-            </label>
+  <div>
+    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+      Map Y
+    </label>
 
-            <input
-              type="number"
-              value={longitude}
-              onChange={event => setLongitude(event.target.value)}
-              placeholder="151.2006"
-              step="any"
-              className={inputClass}
-            />
-          </div>
-        </div>
+    <input
+      type="number"
+      value={mapY}
+      onChange={event => setMapY(event.target.value)}
+      min="0"
+      max="1024"
+      className={inputClass}
+    />
+  </div>
+</div>
+
 
         <p className="text-[11px] leading-relaxed text-neutral-400">
           The coordinates determine where the event marker appears on the map.
