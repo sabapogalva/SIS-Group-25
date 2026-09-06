@@ -7,6 +7,7 @@ import StatusCard from './components/StatusCard';
 import EventCard from './components/EventCard';
 import EventForm from './components/EventForm';
 import EventDetails from './components/EventDetails';
+import CampusMap from './components/CampusMap';
 
 import { CURRENT_USER, SEED_FEED, SAMPLE_EVENT } from './constants/seed';
 import { makeId, initials } from './utils/helpers';
@@ -25,10 +26,31 @@ export default function App() {
     setFeed(prev => [{ id: makeId(), type: 'status', text, time: 'Just now', author: CURRENT_USER }, ...prev]);
   };
 
-  const handlePublishEvent = ({ title, location, time }) => {
-    setFeed(prev => [{ id: makeId(), type: 'event', title, location, time, author: CURRENT_USER }, ...prev]);
+  const handlePublishEvent = ({
+    title,
+    location,
+    time,
+    latitude,
+    longitude,
+  }) => {
+    setFeed(prev => [
+      {
+        id: makeId(),
+        type: 'event',
+        title,
+        location,
+        time,
+        author: CURRENT_USER,
+        latitude,
+        longitude,
+      },
+      ...prev,
+    ]);
+  
     setShowEventForm(false);
   };
+  
+  
 
   const handleOpenEvent = (item) => {
     setSelectedEvent({
@@ -50,7 +72,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-orange-50 p-4 md:p-8 font-sans">
-      <div className="max-w-xl mx-auto">
+      <div className="mx-auto max-w-7xl">
 
     <Header
         page={page}
@@ -59,43 +81,60 @@ export default function App() {
         onToggle={() => setShowEventForm(f => !f)}
     />
 
-    {page === 'event' ? (
-          <EventDetails
-            event={currentEvent}
-            joined={joined}
-            onJoin={() => setJoined(true)}
+{page === 'event' ? (
+  <EventDetails
+    event={currentEvent}
+    joined={joined}
+    onJoin={() => setJoined(true)}
+  />
+) : (
+  <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-start">
+    {/* Feed on the left */}
+    <div className="space-y-3">
+      <PresenceStrip />
+
+      {showEventForm && (
+        <EventForm
+          onSubmit={handlePublishEvent}
+          onCancel={() => setShowEventForm(false)}
+        />
+      )}
+
+      <StatusInput onPost={handlePostStatus} />
+
+      <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+        Today's updates
+      </p>
+
+      {feed.length === 0 && (
+        <p className="py-16 text-center text-sm text-neutral-400">
+          Nothing here yet. Post a status or host an event.
+        </p>
+      )}
+
+      {feed.map(item =>
+        item.type === 'event' ? (
+          <EventCard
+            key={item.id}
+            item={item}
+            onOpen={() => handleOpenEvent(item)}
           />
         ) : (
-          <div className="space-y-3">
-            <PresenceStrip />
+          <StatusCard key={item.id} item={item} />
+        )
+      )}
+    </div>
 
-            {showEventForm && (
-              <EventForm
-                onSubmit={handlePublishEvent}
-                onCancel={() => setShowEventForm(false)}
-              />
-            )}
+    {/* Map on the right */}
+    <div className="lg:sticky lg:top-6">
+      <CampusMap
+        events={feed.filter(item => item.type === 'event')}
+      />
+    </div>
+  </div>
+)}
 
-            <StatusInput onPost={handlePostStatus} />
 
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 px-1 pt-1">
-              Today's updates
-            </p>
-
-            {feed.length === 0 && (
-              <p className="text-center text-neutral-400 text-sm py-16">
-                Nothing here yet. Post a status or host an event.
-              </p>
-            )}
-
-            {feed.map(item =>
-              item.type === 'event'
-                ? <EventCard key={item.id} item={item} onOpen={() => handleOpenEvent(item)} />
-                : <StatusCard key={item.id} item={item} />
-            )}
-            
-          </div>
-        )}
 
         <footer className="text-center text-[11px] text-neutral-400 mt-12 pt-6 border-t border-neutral-100">
           Recess v1.3 · Campus coordination for UTS
