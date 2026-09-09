@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import Landing from './components/Landing'; 
+import Auth from './components/Auth';
 import Header from './components/Header';
 import PresenceStrip from './components/PresenceStrip';
 import StatusInput from './components/StatusInput';
@@ -15,9 +17,10 @@ import { makeId, initials } from './utils/helpers';
 // --- Main App ---
 
 export default function App() {
+  const [page, setPage] = useState('landing'); 
+  const [authMode, setAuthMode] = useState('signin');
   const [feed, setFeed] = useState(SEED_FEED);
   const [showEventForm, setShowEventForm] = useState(false);
-  const [page, setPage] = useState('feed');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [joined, setJoined] = useState(false);
 
@@ -69,6 +72,32 @@ export default function App() {
   };
 
   const currentEvent = selectedEvent ?? SAMPLE_EVENT;
+
+
+  // Render the Landing page view when page state is 'landing'
+  if (page === 'landing') {
+    return (
+      <Landing 
+        onGetStarted={(mode) => {
+          setAuthMode(mode);
+          setPage('auth');
+        }} 
+      />
+    );
+  }
+
+  // Render the Auth page view when page state is 'auth'
+  if (page === 'auth') {
+    return (
+      <Auth 
+        mode={authMode} 
+        onBack={() => setPage('landing')} 
+        onSuccess={() => setPage('feed')} 
+      />
+    );
+  }
+
+
 
   return (
     <div className="min-h-screen bg-orange-50 p-4 md:p-8 font-sans">
