@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(21);
 
 -- 1. availabilities table exists
 select has_table(
@@ -78,7 +78,7 @@ select ok(
   'user_id references profiles'
 );
 
--- 9. area_id links to areas
+-- 9. area_id links to approximate areas
 select ok(
   exists (
     select 1
@@ -153,6 +153,111 @@ select ok(
       and not tgisinternal
   ),
   'availability updated_at trigger exists'
+);
+
+-- 15. INSERT policy exists
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'availabilities'
+      and policyname = 'verified users can create their own availability'
+      and cmd = 'INSERT'
+  ),
+  'verified users can create their own availability'
+);
+
+-- 16. SELECT policy exists
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'availabilities'
+      and policyname = 'verified users can read active availability'
+      and cmd = 'SELECT'
+  ),
+  'verified users can read active availability'
+);
+
+-- 17. UPDATE policy exists
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'availabilities'
+      and policyname = 'verified users can update their own availability'
+      and cmd = 'UPDATE'
+  ),
+  'verified users can update their own availability'
+);
+
+-- 18. DELETE policy exists
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'availabilities'
+      and policyname = 'verified users can delete their own availability'
+      and cmd = 'DELETE'
+  ),
+  'verified users can delete their own availability'
+);
+
+-- 19. expired availability is hidden from normal reads
+select ok(
+  (
+    select
+      position(
+        'end_time > now()'
+        in coalesce(qual, '')
+      ) > 0
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'availabilities'
+      and policyname = 'verified users can read active availability'
+  ),
+  'expired availability is excluded from normal reads'
+);
+
+-- 20. INSERT policy restricts records to the current user
+select ok(
+  (
+    select
+      position(
+        'user_id = auth.uid()'
+        in coalesce(with_check, '')
+      ) > 0
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'availabilities'
+      and policyname = 'verified users can create their own availability'
+  ),
+  'users can only create their own availability'
+);
+
+-- 21. UPDATE policy protects ownership before and after update
+select ok(
+  (
+    select
+      position(
+        'user_id = auth.uid()'
+        in coalesce(qual, '')
+      ) > 0
+      and
+      position(
+        'user_id = auth.uid()'
+        in coalesce(with_check, '')
+      ) > 0
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'availabilities'
+      and policyname = 'verified users can update their own availability'
+  ),
+  'users can only update their own availability'
 );
 
 select * from finish();
