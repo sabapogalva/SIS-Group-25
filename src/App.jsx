@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import Landing from './components/Landing'; 
 import Auth from './components/Auth';
 import Header from './components/Header';
