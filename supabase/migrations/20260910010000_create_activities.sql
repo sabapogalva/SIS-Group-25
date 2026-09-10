@@ -5,7 +5,7 @@
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
 
-  creator_id uuid not null
+  creator_id uuid not null default auth.uid()
     references public.profiles(id)
     on delete cascade,
 
