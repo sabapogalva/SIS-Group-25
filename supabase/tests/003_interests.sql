@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(18);
 
 -- 1. interests table exists
 select has_table(
@@ -148,6 +148,58 @@ select is(
   ),
   2::bigint,
   'profile interest indexes exist'
+);
+
+-- 15. users can add interests to their own profile
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'profile_interests'
+      and policyname = 'verified users can add their own interests'
+      and cmd = 'INSERT'
+  ),
+  'verified users can add their own interests'
+);
+
+-- 16. users can remove interests from their own profile
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'profile_interests'
+      and policyname = 'verified users can remove their own interests'
+      and cmd = 'DELETE'
+  ),
+  'verified users can remove their own interests'
+);
+
+-- 17. verified users can read profile interests
+select ok(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'profile_interests'
+      and policyname = 'verified users can read profile interests'
+      and cmd = 'SELECT'
+  ),
+  'verified users can read profile interests'
+);
+
+-- 18. normal users cannot modify the master interests list
+select is(
+  (
+    select count(*)
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'interests'
+      and cmd in ('INSERT', 'UPDATE', 'DELETE')
+  ),
+  0::bigint,
+  'master interests list is read only for normal users'
 );
 
 select * from finish();
