@@ -186,7 +186,8 @@ begin
   select a.creator_id, a.status, a.end_time, a.participant_limit
     into v_activity
   from public.activities a
-  where a.id = coalesce(new.activity_id, old.activity_id);
+  where a.id = coalesce(new.activity_id, old.activity_id)
+  for update;
 
   if tg_op = 'INSERT' then
     -- the creator's own row comes from insert_creator_as_participant();
