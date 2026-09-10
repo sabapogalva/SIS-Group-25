@@ -69,6 +69,9 @@ This document defines the response shape for (2). Direct client queries
 | `activity_full` | Activity already at its participant limit |
 | `expired` | The activity/event/availability referenced has expired |
 | `rate_limited` | Too many requests/messages in the current window |
+| `invalid_time_window` | Activity start/end time is invalid (in the past, end before start, or over the 4-hour max) |
+| `activity_cancelled` | The activity has been cancelled and can no longer be joined or edited |
+| `invalid_transition` | The requested participant status change isn't allowed (e.g. a declined request trying to become pending/accepted again) |
 
 Add new codes here as each phase's Edge Functions are implemented --
 this table is the shared contract frontend can rely on across phases.
