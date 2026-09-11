@@ -10,10 +10,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const CAMPUS_MAP_URL =
-  "/assets/uts-campus-map.avif";
+  "/public/uts-campus-map.avif";
 
-const IMAGE_WIDTH = 1024;
-const IMAGE_HEIGHT = 1024;
+const IMAGE_WIDTH = 1824;
+const IMAGE_HEIGHT = 1824;
 
 // Leaflet's simple coordinate system uses [y, x]
 const IMAGE_BOUNDS = [
@@ -38,7 +38,7 @@ const orangeEventIcon = L.divIcon({
   popupAnchor: [0, -12],
 });
 
-function RecenterMap({ events }) {
+function RecenterMap({ events }) { 
   const map = useMap();
 
   useEffect(() => {
