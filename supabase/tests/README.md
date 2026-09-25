@@ -28,6 +28,14 @@ Two layers, matching what each part of the backend actually needs:
    Run with `npx supabase functions serve` locally + `deno test`, or via
    the function's own test command once added.
 
+## Auth verification tests
+
+`001_auth_verification.sql` covers the Phase 1 foundation that is safe to
+exercise without creating real accounts: email normalisation, approved-domain
+resolution, the profile schema, Auth triggers and the verified-user helper.
+The full signup/confirmation flow must still be smoke-tested against a local
+Supabase Auth instance because `auth.users` is managed by Supabase.
+
 ## Example pgTAP test (template)
 
 `supabase/tests/001_organisations_rls.sql`:
