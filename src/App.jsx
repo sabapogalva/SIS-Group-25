@@ -26,13 +26,7 @@ export default function App() {
     setFeed(prev => [{ id: makeId(), type: 'status', text, time: 'Just now', author: CURRENT_USER }, ...prev]);
   };
 
-  const handlePublishEvent = ({
-    title,
-    location,
-    time,
-    mapX,
-    mapY,
-  }) => {
+  const handlePublishEvent = ({ title, location, time, mapX, mapY }) => {
     setFeed(prev => [
       {
         id: makeId(),
@@ -49,6 +43,7 @@ export default function App() {
   
     setShowEventForm(false);
   };
+  
   
   
 
