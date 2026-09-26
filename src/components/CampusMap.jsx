@@ -14,10 +14,7 @@ import 'leaflet/dist/leaflet.css';
 // Files in /public are served from the site root, so the URL has no "/public".
 // Put the file at:  public/uts-campus-map.avif
 // ---------------------------------------------------------------------------
-const CAMPUS_MAP_URL = '/uts-campus-map.avif';
-const CAMPUS_MAP_URL =
-  "/uts-campus-map.avif";
-
+const CAMPUS_MAP_URL = 'public/uts-campus-map.avif';
 const IMAGE_WIDTH = 1824;
 const IMAGE_HEIGHT = 1824;
 
