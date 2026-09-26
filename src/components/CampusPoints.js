@@ -8,7 +8,7 @@ export const CAMPUS_POINTS = [
       code: '01',
       name: 'UTS Tower',
       description: 'Main administrative tower.',
-      coords: [1010, 990],
+      coords: [1010, 1010],
     },
     {
       id: 'building-02',

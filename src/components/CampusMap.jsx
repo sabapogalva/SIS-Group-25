@@ -27,24 +27,22 @@ const IMAGE_BOUNDS = L.latLngBounds([0, 0], [IMAGE_HEIGHT, IMAGE_WIDTH]);
 //    Values below were read off the campus map artwork; nudge them freely.
 // ---------------------------------------------------------------------------
 const CAMPUS_POINTS = [
-  { id: 'b01',  code: '01',   name: 'UTS Tower',                    description: 'Main administrative tower.',            coords: [1085, 959] },
-  { id: 'b02',  code: '02',   name: 'Building 02',                  description: 'Faculty of Arts and Social Sciences.',  coords: [1164, 832] },
-  { id: 'b03',  code: '03',   name: 'Building 03',                  description: 'UTS Business School.',                  coords: [1206, 1106] },
-  { id: 'b04',  code: '04',   name: 'Building 04',                  description: 'Engineering and IT.',                   coords: [994, 1113] },
-  { id: 'b05',  code: '05',   name: 'Building 05',                  description: 'Haymarket campus.',                     coords: [688, 1583] },
-  { id: 'b06',  code: '06',   name: 'Building 06',                  description: 'Data Arena.',                           coords: [1078, 1242] },
-  { id: 'b07',  code: '07',   name: 'Building 07',                  description: 'Library entrance area.',                coords: [925, 876] },
-  { id: 'b08',  code: '08',   name: 'Building 08',                  description: 'Dr Chau Chak Wing Building.',           coords: [711, 1361] },
-  { id: 'b09',  code: '09',   name: 'Building 09',                  description: 'Central courtyard building.',           coords: [1259, 1106] },
-  { id: 'b10',  code: '10',   name: 'Building 10',                  description: 'Faculty of Science.',                   coords: [925, 631] },
-  { id: 'b11',  code: '11',   name: 'UTS Library',                  description: 'Library and study spaces.',             coords: [1140, 631] },
-  { id: 'b15',  code: '15',   name: 'Building 15',                  description: 'Postgraduate and research spaces.',     coords: [677, 1242] },
-  { id: 'b18',  code: '18',   name: 'Building 18',                  description: 'Science labs.',                         coords: [1328, 1106] },
-  { id: 'ca02', code: 'CA02', name: 'Bulga Ngurra Student Housing', description: 'UTS student accommodation.',            coords: [597, 217] },
-  { id: 'ca03', code: 'CA03', name: 'Gumal Ngurra Student Housing', description: 'UTS student accommodation.',            coords: [1031, 378] },
-  { id: 'ca06', code: 'CA06', name: 'Yura Mudang Student Housing',  description: 'UTS student accommodation.',            coords: [1012, 1370] },
-  { id: 'ph01', code: 'PH01', name: 'Powerhouse Museum',            description: 'Adjacent cultural landmark.',           coords: [374, 1317] },
-  { id: 'green', code: 'AG',  name: 'Alumni Green',                 description: 'Open lawn between buildings.',          coords: [1001, 830] },
+  { id: 'b01',  code: '01',   name: 'UTS Tower',                    description: 'Main administrative tower.',            coords: [700, 950] },
+  { id: 'b02',  code: '02',   name: 'Building 02',                  description: 'Faculty of Law.',                       coords: [650, 832] },
+  { id: 'b03',  code: '03',   name: 'Building 03',                  description: 'UTS international studies.',            coords: [650, 1106] },
+  { id: 'b04',  code: '04',   name: 'Building 04',                  description: 'ActivateUTS Gym.',                      coords: [800, 1113] },
+  { id: 'b05',  code: '05',   name: 'Building 05',                  description: 'Haymarket campus.',                     coords: [1100, 1583] },
+  { id: 'b06',  code: '06',   name: 'Building 06',                  description: 'DAB Building',                          coords: [711, 1261] },
+  { id: 'b07',  code: '07',   name: 'Building 07',                  description: 'Social Science and Protospace',         coords: [925, 876] },
+  { id: 'b08',  code: '08',   name: 'Building 08',                  description: 'School of Business.',                   coords: [1112, 1370] },
+  { id: 'b09',  code: '09',   name: 'Building 09',                  description: 'Central courtyard building.',           coords: [550, 1106] },
+  { id: 'b10',  code: '10',   name: 'Building 10',                  description: 'Faculty of Science/nursing.',           coords: [925, 631] },
+  { id: 'b11',  code: '11',   name: 'Building 11',                  description: 'Faculty of Engineering and IT',         coords: [650, 600] },
+  { id: 'b15',  code: '15',   name: 'Building 15',                  description: 'Trandsdiciplinary Innovation.',         coords: [1162, 1242] },
+  { id: 'ca02', code: 'CA02', name: 'Bulga Ngurra Student Housing', description: 'UTS student accommodation.',            coords: [1250, 217] },
+  { id: 'ca03', code: 'CA03', name: 'Gumal Ngurra Student Housing', description: 'UTS student accommodation.',            coords: [800, 378] },
+  { id: 'ca06', code: 'CA06', name: 'Yura Mudang Student Housing',  description: 'UTS student accommodation.',            coords: [800, 1370] },
+  { id: 'green', code: 'AG',  name: 'Alumni Green',                 description: 'Open lawn between buildings.',          coords: [825, 830] },
 ];
 
 /**
@@ -136,7 +134,7 @@ function CampusMapInner({ events }) {
       typeof event.mapY === 'number'
   );
 
-  const totalPoints = CAMPUS_POINTS.length + campusEvents.length;
+  const totalPoints = campusEvents.length;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
@@ -159,13 +157,6 @@ function CampusMapInner({ events }) {
               <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#FF9124" />
             </svg>
             Event
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <svg width="10" height="14" viewBox="5 2 14 20" aria-hidden="true">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EAB308" />
-            </svg>
-            Campus location
           </div>
         </div>
       </div>
@@ -192,22 +183,6 @@ function CampusMapInner({ events }) {
           <ImageOverlay url={CAMPUS_MAP_URL} bounds={IMAGE_BOUNDS} />
 
           <FitImageToContainer />
-
-          {CAMPUS_POINTS.map(point => (
-            <Marker key={point.id} position={point.coords} icon={yellowPin}>
-              <Popup>
-                <div className="min-w-[180px]">
-                  <h3 className="font-semibold text-neutral-900">{point.name}</h3>
-
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                    Building {point.code}
-                  </p>
-
-                  <p className="mt-1 text-sm text-neutral-600">{point.description}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
 
           {campusEvents.map(event => (
             <Marker
