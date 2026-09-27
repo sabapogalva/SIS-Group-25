@@ -65,6 +65,7 @@ This document defines the response shape for (2). Direct client queries
 | `forbidden` | A protected account/profile field cannot be changed by the client |
 | `blocked` | Action blocked due to a block relationship |
 | `already_connected` | Connection request rejected -- already connected |
+| `not_connected` | Private message rejected -- the two users are no longer connected (history stays readable) |
 | `request_pending` | Duplicate connection/join request |
 | `activity_full` | Activity already at its participant limit |
 | `expired` | The activity/event/availability referenced has expired |
