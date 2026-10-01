@@ -11,6 +11,8 @@ import EventDetails from './components/EventDetails';
 import CampusMap from './components/CampusMap';
 import LegalPage from './components/LegalPage';
 import Profile from './components/Profile';
+import CalendarView from './components/CalendarView';
+
 
 import { CURRENT_USER, SEED_FEED, SAMPLE_EVENT } from './constants/seed';
 import { makeId, initials } from './utils/helpers';
