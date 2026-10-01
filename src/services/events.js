@@ -72,6 +72,120 @@ export async function rsvpToEvent(eventId, status = 'going') {
   });
 }
 
+export async function loadCalendarEvents() {
+  const [{ data: rsvps, error: rsvpError }, { data: memberships, error: membershipError }] = await Promise.all([
+    supabase
+      .from('event_rsvps')
+      .select('event_id, status, created_at')
+      .in('status', ['going', 'interested']),
+    supabase
+      .from('activity_participants')
+      .select('activity_id, status, created_at')
+      .in('status', ['pending', 'accepted']),
+  ]);
+
+  if (rsvpError) throw rsvpError;
+  if (membershipError) throw membershipError;
+
+  const eventIds = (rsvps ?? []).map((rsvp) => rsvp.event_id);
+  const activityIds = (memberships ?? []).map((membership) => membership.activity_id);
+
+  const [{ data: officialEvents, error: officialError }, { data: activities, error: activityError }] = await Promise.all([
+    eventIds.length
+      ? supabase
+        .from('official_events')
+        .select('id, title, description, location_id, area_id, latitude, longitude, start_time, end_time, status, locations(name), areas(name)')
+        .in('id', eventIds)
+      : Promise.resolve({ data: [], error: null }),
+    activityIds.length
+      ? supabase
+        .from('activities')
+        .select('id, title, description, category, location_label, latitude, longitude, start_time, end_time, status, areas(name, locations(name))')
+        .in('id', activityIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (officialError) throw officialError;
+  if (activityError) throw activityError;
+
+  const rsvpByEventId = new Map((rsvps ?? []).map((rsvp) => [rsvp.event_id, rsvp]));
+  const membershipByActivityId = new Map((memberships ?? []).map((membership) => [membership.activity_id, membership]));
+
+  const officialCalendarEvents = (officialEvents ?? []).map((event) => {
+    const rsvp = rsvpByEventId.get(event.id);
+    return {
+      id: `official:${event.id}`,
+      remoteId: event.id,
+      eventType: 'official_event',
+      title: event.title,
+      description: event.description,
+      location: event.locations?.name ?? event.areas?.name ?? 'Campus venue',
+      time: formatTimeWindow(event.start_time, event.end_time),
+      startTime: event.start_time,
+      endTime: event.end_time,
+      host: 'Organisation event',
+      rsvpStatus: rsvp?.status ?? 'going',
+    };
+  });
+
+  const activityCalendarEvents = (activities ?? []).map((activity) => {
+    const membership = membershipByActivityId.get(activity.id);
+    const area = activity.areas;
+    return {
+      id: `activity:${activity.id}`,
+      remoteId: activity.id,
+      eventType: 'activity',
+      title: activity.title,
+      description: activity.description,
+      location: activity.location_label ?? area?.name ?? area?.locations?.name ?? 'Campus meeting point',
+      time: formatTimeWindow(activity.start_time, activity.end_time),
+      startTime: activity.start_time,
+      endTime: activity.end_time,
+      host: 'Recess community',
+      rsvpStatus: membership?.status ?? 'pending',
+    };
+  });
+
+  return [...officialCalendarEvents, ...activityCalendarEvents]
+    .sort((left, right) => new Date(left.startTime) - new Date(right.startTime));
+}
+
+export async function cancelCalendarEvent(event) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Authentication required');
+
+  if (event.eventType === 'official_event') {
+    const { error } = await supabase
+      .from('event_rsvps')
+      .delete()
+      .eq('event_id', event.remoteId)
+      .eq('user_id', user.id);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase
+    .from('activity_participants')
+    .update({ status: 'left' })
+    .eq('activity_id', event.remoteId)
+    .eq('user_id', user.id);
+  if (error) throw error;
+}
+
+export function subscribeToCalendarChanges(onChange) {
+  const channel = supabase
+    .channel('recess-calendar-updates')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'event_rsvps' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'official_events' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_participants' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, onChange)
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
 export async function joinActivity(activityId) {
   const { data, error } = await supabase
     .from('activity_participants')

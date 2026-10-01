@@ -3,8 +3,10 @@ import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
 import {
   OSM_ATTRIBUTION,
   OSM_TILE_URL,
+  EVENT_MARKER_RADIUS_METERS,
   UTS_CENTER,
   formatCoordinates,
+  isWithinLocationRadius,
   isValidCoordinates,
   wrapLongitude,
 } from '../constants/map';
@@ -61,6 +63,13 @@ export default function EventForm({ areas = [], onSubmit, onCancel, submitting =
 
   const effectiveAreaId = areaId || areas[0]?.id || '';
   const selectedArea = areas.find((area) => area.id === effectiveAreaId);
+  const selectedLocation = selectedArea?.locations;
+  const markerWithinArea = isWithinLocationRadius(
+    position[0],
+    position[1],
+    selectedLocation?.latitude,
+    selectedLocation?.longitude,
+  );
   const formIsInvalid = !title.trim()
     || title.trim().length < 3
     || !location.trim()
@@ -68,7 +77,8 @@ export default function EventForm({ areas = [], onSubmit, onCancel, submitting =
     || !startTime
     || !endTime
     || new Date(endTime) <= new Date(startTime)
-    || !isValidCoordinates(position[0], position[1]);
+    || !isValidCoordinates(position[0], position[1])
+    || !markerWithinArea;
 
   const handleAreaChange = (event) => {
     const nextAreaId = event.target.value;
@@ -164,6 +174,11 @@ export default function EventForm({ areas = [], onSubmit, onCancel, submitting =
         </MapContainer>
         <p aria-live="polite" className="mt-1 text-[11px] text-neutral-500">Selected: {formatCoordinates(position[0], position[1])}</p>
         <p className="mt-1 text-[11px] text-neutral-500">Approved area: {selectedArea?.name ?? 'Select an area'}</p>
+        {!markerWithinArea && (
+          <p role="alert" className="mt-1 text-[11px] text-red-600">
+            Move the pin within {EVENT_MARKER_RADIUS_METERS} metres of the selected area before publishing.
+          </p>
+        )}
       </div>
 
       <button type="submit" disabled={formIsInvalid || submitting} className="w-full rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-orange-200">
