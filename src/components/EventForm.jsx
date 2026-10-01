@@ -1,164 +1,189 @@
 import { useState } from 'react';
+import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
+import {
+  OSM_ATTRIBUTION,
+  OSM_TILE_URL,
+  EVENT_MARKER_RADIUS_METERS,
+  UTS_CENTER,
+  formatCoordinates,
+  isWithinLocationRadius,
+  isValidCoordinates,
+  wrapLongitude,
+} from '../constants/map';
+import { selectionIcon } from '../utils/mapIcons';
 
-const inputClass =
-  'w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-neutral-50 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all font-[inherit]';
+const inputClass = 'w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:border-orange-400';
+const categories = [
+  ['study_session', 'Study session'],
+  ['coffee_break', 'Coffee break'],
+  ['lunch', 'Lunch'],
+  ['walk', 'Walk'],
+  ['casual_game', 'Casual game'],
+  ['group_discussion', 'Group discussion'],
+  ['other', 'Other'],
+];
 
-export default function EventForm({ onSubmit, onCancel }) {
+function toLocalDateTime(date) {
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function LocationPicker({ position, onChange }) {
+  useMapEvents({
+    click: (event) => onChange([event.latlng.lat, wrapLongitude(event.latlng.lng)]),
+  });
+
+  return (
+    <Marker
+      position={position}
+      icon={selectionIcon}
+      draggable
+      title="Drag to choose the event location"
+      alt="Selected event location"
+      eventHandlers={{
+        dragend: (event) => {
+          const { lat, lng } = event.target.getLatLng();
+          onChange([lat, wrapLongitude(lng)]);
+        },
+      }}
+    />
+  );
+}
+
+export default function EventForm({ areas = [], onSubmit, onCancel, submitting = false }) {
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
-  const [time, setTime] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('study_session');
+  const [participantLimit, setParticipantLimit] = useState('3');
+  const [areaId, setAreaId] = useState('');
+  const [startTime, setStartTime] = useState(() => toLocalDateTime(new Date(Date.now() + 30 * 60 * 1000)));
+  const [endTime, setEndTime] = useState(() => toLocalDateTime(new Date(Date.now() + 90 * 60 * 1000)));
+  const [position, setPosition] = useState(UTS_CENTER);
 
-  // Default location: UTS campus
-  const [mapX, setMapX] = useState('512');
-  const [mapY, setMapY] = useState('512');
-  
+  const effectiveAreaId = areaId || areas[0]?.id || '';
+  const selectedArea = areas.find((area) => area.id === effectiveAreaId);
+  const selectedLocation = selectedArea?.locations;
+  const markerWithinArea = isWithinLocationRadius(
+    position[0],
+    position[1],
+    selectedLocation?.latitude,
+    selectedLocation?.longitude,
+  );
+  const formIsInvalid = !title.trim()
+    || title.trim().length < 3
+    || !location.trim()
+    || !effectiveAreaId
+    || !startTime
+    || !endTime
+    || new Date(endTime) <= new Date(startTime)
+    || !isValidCoordinates(position[0], position[1])
+    || !markerWithinArea;
 
-  const handleSubmit = () => {
-    if (!title.trim() || !location.trim()) return;
+  const handleAreaChange = (event) => {
+    const nextAreaId = event.target.value;
+    setAreaId(nextAreaId);
+    const nextArea = areas.find((area) => area.id === nextAreaId);
+    const latitude = nextArea?.locations?.latitude;
+    const longitude = nextArea?.locations?.longitude;
+    if (isValidCoordinates(latitude, longitude)) setPosition([latitude, longitude]);
+  };
 
-    const mapXNumber = Number(mapX);
-    const mapYNumber = Number(mapY);
-
-    // Prevent invalid coordinates outside the campus image.
-    if (
-      Number.isNaN(mapXNumber) ||
-      Number.isNaN(mapYNumber) ||
-      mapXNumber < 0 ||
-      mapXNumber > 1824 ||
-      mapYNumber < 0 ||
-      mapYNumber > 1824
-    ) {
-      return;
-    }
-
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (formIsInvalid) return;
     onSubmit({
       title: title.trim(),
       location: location.trim(),
-      time: time.trim() || 'TBD',
-      mapX: mapXNumber,
-      mapY: mapYNumber,
+      description: description.trim() || null,
+      category,
+      participantLimit: Number(participantLimit),
+      areaId: effectiveAreaId,
+      startTime: new Date(startTime).toISOString(),
+      endTime: new Date(endTime).toISOString(),
+      latitude: position[0],
+      longitude: position[1],
     });
-    
   };
 
-  const formIsInvalid =
-    !title.trim() ||
-    !location.trim() ||
-    !mapX.trim() ||
-    !mapY.trim();
-
   return (
-    <div className="rounded-2xl border border-orange-200 bg-white p-5">
-      <h2 className="mb-0.5 text-sm font-bold text-neutral-950">
-        Host a campus event
-      </h2>
-
-      <p className="mb-4 text-xs text-neutral-400">
-        Open it up — anyone nearby can see it and RSVP.
-      </p>
-
-      <div className="space-y-3">
+    <form onSubmit={handleSubmit} className="bg-white border border-orange-100 rounded-2xl p-4 shadow-sm space-y-3">
+      <div className="flex items-center justify-between">
         <div>
-          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-            Event title
-          </label>
-
-          <input
-            type="text"
-            value={title}
-            onChange={event => setTitle(event.target.value)}
-            placeholder="React study session"
-            maxLength={80}
-            className={inputClass}
-          />
+          <h2 className="text-sm font-bold text-neutral-900">Host an event</h2>
+          <p className="text-[11px] text-neutral-400">Create a public meetup for verified Recess users.</p>
         </div>
-
-        <div>
-          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-            Location
-          </label>
-
-          <input
-            type="text"
-            value={location}
-            onChange={event => setLocation(event.target.value)}
-            placeholder="UTS Building 11, Lab 302"
-            maxLength={80}
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-            Time
-          </label>
-
-          <input
-            type="text"
-            value={time}
-            onChange={event => setTime(event.target.value)}
-            placeholder="3:00 PM"
-            maxLength={40}
-            className={inputClass}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-  <div>
-    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-      Map X
-    </label>
-
-    <input
-      type="number"
-      value={mapX}
-      onChange={event => setMapX(event.target.value)}
-      min="0"
-      max="1824"
-      className={inputClass}
-    />
-  </div>
-
-  <div>
-    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-      Map Y
-    </label>
-
-    <input
-      type="number"
-      value={mapY}
-      onChange={event => setMapY(event.target.value)}
-      min="0"
-      max="1824"
-      className={inputClass}
-    />
-  </div>
-</div>
-
-
-        <p className="text-[11px] leading-relaxed text-neutral-400">
-          The coordinates determine where the event marker appears on the map.
-        </p>
+        <button type="button" onClick={onCancel} className="text-xs text-neutral-400 hover:text-neutral-700">Cancel</button>
       </div>
 
-      <div className="mt-5 flex gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 rounded-xl bg-neutral-100 py-2.5 text-sm font-semibold text-neutral-600 transition-colors hover:bg-neutral-200"
-        >
-          Cancel
-        </button>
+      <label className="block text-xs font-semibold text-neutral-700">
+        <span className="mb-1 block">Event title</span>
+        <input value={title} onChange={(event) => setTitle(event.target.value)} required minLength={3} maxLength={80} placeholder="React study session" className={inputClass} />
+      </label>
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={formIsInvalid}
-          className="flex-[2] rounded-xl bg-orange-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-orange-200"
-        >
-          Publish event
-        </button>
+      <label className="block text-xs font-semibold text-neutral-700">
+        <span className="mb-1 block">Venue or meeting point</span>
+        <input value={location} onChange={(event) => setLocation(event.target.value)} required maxLength={120} placeholder="UTS Building 11, Lab 302" className={inputClass} />
+      </label>
+
+      <label className="block text-xs font-semibold text-neutral-700">
+        <span className="mb-1 block">Area</span>
+        <select value={effectiveAreaId} onChange={handleAreaChange} required className={inputClass}>
+          <option value="">Select an approved campus area</option>
+          {areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
+        </select>
+      </label>
+
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block text-xs font-semibold text-neutral-700">
+          <span className="mb-1 block">Category</span>
+          <select value={category} onChange={(event) => setCategory(event.target.value)} className={inputClass}>
+            {categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
+        <label className="block text-xs font-semibold text-neutral-700">
+          <span className="mb-1 block">Places available</span>
+          <select value={participantLimit} onChange={(event) => setParticipantLimit(event.target.value)} className={inputClass}>
+            {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
       </div>
-    </div>
+
+      <label className="block text-xs font-semibold text-neutral-700">
+        <span className="mb-1 block">Description (optional)</span>
+        <textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} rows={2} placeholder="What should people know before joining?" className={`${inputClass} resize-none`} />
+      </label>
+
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block text-xs font-semibold text-neutral-700">
+          <span className="mb-1 block">Starts</span>
+          <input type="datetime-local" value={startTime} onChange={(event) => setStartTime(event.target.value)} required className={inputClass} />
+        </label>
+        <label className="block text-xs font-semibold text-neutral-700">
+          <span className="mb-1 block">Ends</span>
+          <input type="datetime-local" value={endTime} onChange={(event) => setEndTime(event.target.value)} required className={inputClass} />
+        </label>
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-semibold text-neutral-700">Choose the event location</p>
+        <p className="mb-2 text-[11px] text-neutral-400">Click the map or drag the pin. The pin is a public meeting point, not your live location.</p>
+        <MapContainer center={position} zoom={16} minZoom={2} maxZoom={19} worldCopyJump scrollWheelZoom={false} className="isolate z-0 h-64 w-full rounded-xl overflow-hidden" aria-label="Choose event location on map">
+          <TileLayer attribution={OSM_ATTRIBUTION} url={OSM_TILE_URL} maxZoom={19} />
+          <LocationPicker position={position} onChange={setPosition} />
+        </MapContainer>
+        <p aria-live="polite" className="mt-1 text-[11px] text-neutral-500">Selected: {formatCoordinates(position[0], position[1])}</p>
+        <p className="mt-1 text-[11px] text-neutral-500">Approved area: {selectedArea?.name ?? 'Select an area'}</p>
+        {!markerWithinArea && (
+          <p role="alert" className="mt-1 text-[11px] text-red-600">
+            Move the pin within {EVENT_MARKER_RADIUS_METERS} metres of the selected area before publishing.
+          </p>
+        )}
+      </div>
+
+      <button type="submit" disabled={formIsInvalid || submitting} className="w-full rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-orange-200">
+        {submitting ? 'Publishing…' : 'Publish event'}
+      </button>
+    </form>
   );
 }

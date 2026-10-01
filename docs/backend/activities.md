@@ -13,8 +13,12 @@ Same architecture as Phases 1-2: every rule is enforced by the database
 **`public.activities`**
 
 - `creator_id` -- the verified user who created it.
-- `area_id` -- always an approved `public.areas` row, never a free-text
-  address or lat/lng (PRD 8.5: "users cannot enter private addresses").
+- `area_id` -- always an approved `public.areas` row. The activity may also
+  store a public venue label and marker coordinates; these are never a user's
+  live position or a private address.
+- `location_label`, `latitude`, `longitude` -- optional public meeting-point
+  details used by the event map. Coordinates are range-checked and must be
+  supplied as a pair. The approved `area_id` remains mandatory for privacy.
 - `title`, `description`, `category`.
 - `start_time` / `end_time` -- must fit in a 4-hour window.
 - `participant_limit` -- 1 to 5, default 3. This is the number of *other*
@@ -45,6 +49,9 @@ const { data, error } = await supabase
     start_time: startTime.toISOString(),
     end_time: endTime.toISOString(),
     participant_limit: 3,
+    location_label: 'UTS Building 11, Lab 302',
+    latitude: -33.8832,
+    longitude: 151.2006,
   })
   .select()
   .single()
@@ -153,6 +160,11 @@ const channel = supabase
   )
   .subscribe()
 ```
+
+The frontend uses the `create-activity` Edge Function for this write. The
+function forwards the request through the caller's Supabase JWT, so the same
+RLS, trigger and rate-limit rules apply. A direct `supabase-js` insert is kept
+as a local-development fallback when the Edge Function runtime is not running.
 
 RLS still applies to Realtime -- a subscriber only receives change events for
 rows they could `select` anyway.

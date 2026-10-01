@@ -1,26 +1,41 @@
-import React, { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Calendar as CalendarIcon, Clock, MapPin, CheckCircle2 } from 'lucide-react';
+import { cancelCalendarEvent, loadCalendarEvents, subscribeToCalendarChanges } from '../services/events';
 
 export default function CalendarView() {
-  // Mock accepted events state - you can replace this with shared or fetched RSVP data later
-  const [acceptedEvents, setAcceptedEvents] = useState([
-    {
-      id: 1,
-      title: 'Capstone sprint — frontend sync',
-      time: '2:00 PM - 3:30 PM',
-      date: 'Thursday, Sep 17, 2026',
-      location: 'UTS Library, Level 4',
-      host: 'Salha',
-    },
-    {
-      id: 2,
-      title: 'UI Design Review & Component Audit',
-      time: '11:00 AM - 12:00 PM',
-      date: 'Monday, Sep 21, 2026',
-      location: 'Building 11, Level 4 Lab',
-      host: 'Saba',
-    },
-  ]);
+  const [acceptedEvents, setAcceptedEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      setError(null);
+      setAcceptedEvents(await loadCalendarEvents());
+    } catch (loadError) {
+      setError(loadError?.message ?? 'Unable to load your RSVP calendar.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+    const unsubscribe = subscribeToCalendarChanges(() => { void refresh(); });
+    return unsubscribe;
+  }, [refresh]);
+
+  const handleCancel = async (event) => {
+    setCancellingId(event.id);
+    try {
+      await cancelCalendarEvent(event);
+      await refresh();
+    } catch (cancelError) {
+      setError(cancelError?.message ?? 'Unable to cancel this RSVP.');
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -39,7 +54,15 @@ export default function CalendarView() {
       <div className="space-y-4">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 px-1">Upcoming RSVP'd Schedule</h3>
         
-        {acceptedEvents.length > 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-2xl p-12 text-center border border-slate-100 text-slate-400">
+            Loading your RSVP calendar…
+          </div>
+        ) : error ? (
+          <div role="alert" className="bg-red-50 rounded-2xl p-6 border border-red-100 text-sm text-red-700">
+            {error}
+          </div>
+        ) : acceptedEvents.length > 0 ? (
           acceptedEvents.map((event) => (
             <div 
               key={event.id}
@@ -49,7 +72,7 @@ export default function CalendarView() {
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-orange-50 text-orange-600">
                     <CheckCircle2 size={12} />
-                    RSVP Confirmed
+                    {event.rsvpStatus === 'interested' ? 'Interested' : event.rsvpStatus === 'pending' ? 'Request pending' : 'RSVP Confirmed'}
                   </span>
                   <span className="text-xs text-slate-400">• Hosted by {event.host}</span>
                 </div>
@@ -59,7 +82,7 @@ export default function CalendarView() {
                 <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 pt-1">
                   <span className="flex items-center gap-1.5">
                     <Clock size={14} className="text-orange-500" />
-                    {event.date} ({event.time})
+                    {event.time}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <MapPin size={14} className="text-orange-500" />
@@ -70,10 +93,11 @@ export default function CalendarView() {
 
               <div className="flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
                 <button 
-                  onClick={() => setAcceptedEvents(prev => prev.filter(e => e.id !== event.id))}
+                  onClick={() => handleCancel(event)}
+                  disabled={cancellingId === event.id}
                   className="px-4 py-2 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-sm font-medium rounded-xl transition-colors border border-slate-200 hover:border-rose-100"
                 >
-                  Cancel RSVP
+                  {cancellingId === event.id ? 'Updating…' : event.eventType === 'official_event' ? 'Cancel RSVP' : 'Leave event'}
                 </button>
               </div>
             </div>
