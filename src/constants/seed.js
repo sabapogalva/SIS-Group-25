@@ -1,5 +1,3 @@
-import { makeId } from '../utils/helpers';
-
 export const CURRENT_USER = 'Salha';
 
 export const PRESENCE_USERS = ['Salha', 'Ahmed', 'Saba', 'Jay'];
@@ -13,8 +11,8 @@ export const SEED_FEED = [
     location: 'UTS Library (Building 11)',
     time: 'Today, 2:00 PM',
     author: 'Sarah Brown',
-    mapX: 818,
-    mapY: 1080,
+    latitude: -33.8832,
+    longitude: 151.2006,
   },
   {
     id: 'event-2',
@@ -23,8 +21,8 @@ export const SEED_FEED = [
     location: 'UTS Broadway Building',
     time: 'Today, 5:00 PM',
     author: 'James Lee',
-    mapX: 990,
-    mapY: 1230,
+    latitude: -33.8840,
+    longitude: 151.2014,
   },
 ];
 

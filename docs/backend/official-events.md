@@ -250,11 +250,12 @@ Returns zeros for an event the caller is not allowed to see.
 
 ## Realtime
 
-`official_events` and `event_rsvps` are **not yet** added to the
-`supabase_realtime` publication (activities are, via
-`20260910011000_activities_realtime.sql`). Until a follow-up migration adds
-them, poll or refetch after writes. When enabled, RLS still applies: a
-subscriber only receives events for rows they could `select`.
+`official_events` and `event_rsvps` are included in the
+`supabase_realtime` publication by
+`20260930081931_map_realtime_updates.sql` (activities and activity
+participants are included as well). A map subscriber should treat these
+events as a refresh signal and call `active_map_points()` again. RLS still
+applies: a subscriber only receives changes for rows they could `select`.
 
 ## Error code reference
 
@@ -277,7 +278,8 @@ These extend the shared table in `docs/backend/api-contract.md`.
   `POST /functions/v1/create-official-event`. The schema does not need to
   change.
 - **No RSVP capacity or waitlist.** Events have no attendee limit.
-- **No Realtime yet** for these two tables (see above).
+- Realtime changes are available for map refreshes; the unified map payload
+  is still produced by `active_map_points()` rather than by raw table rows.
 - **No Edge Functions yet** (`create-official-event`, `rsvp-to-event`).
   All rules are enforced by RLS/triggers, so direct `supabase-js` calls are
   safe; the functions would add a stable `{ data, error }` envelope and
