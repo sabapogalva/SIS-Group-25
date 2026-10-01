@@ -11,6 +11,8 @@ import EventDetails from './components/EventDetails';
 import CampusMap from './components/CampusMap';
 import LegalPage from './components/LegalPage';
 import Profile from './components/Profile';
+import CalendarView from './components/CalendarView';
+
 
 import { supabase } from './lib/supabaseClient';
 import { CURRENT_USER, SAMPLE_EVENT, SEED_FEED } from './constants/seed';
@@ -215,7 +217,9 @@ export default function App() {
           onNavigate={(nextPage) => setPage(nextPage)}
         />
 
-        {page === 'event' ? (
+        {page === 'calendar' ? (
+          <CalendarView />
+        ) : page === 'event' ? (
           <>
             {eventError && <p role="alert" className="mb-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">{eventError}</p>}
             <EventDetails event={currentEvent} joined={joined} onJoin={handleJoinEvent} />
