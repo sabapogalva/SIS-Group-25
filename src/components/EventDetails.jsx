@@ -1,5 +1,5 @@
 export default function EventDetails({ event, joined, onJoin }) {
-  const { title, location, time, description, host } = event;
+  const { title, location, time, description, host, isCreator } = event;
 
   return (
     <>
@@ -56,14 +56,14 @@ export default function EventDetails({ event, joined, onJoin }) {
       <button
         type="button"
         onClick={onJoin}
-        disabled={joined}
+        disabled={joined || isCreator}
         className={`mt-5 w-full py-3.5 rounded-xl text-sm font-semibold transition-all ${
           joined
             ? 'bg-neutral-100 text-neutral-400 cursor-default'
             : 'bg-orange-500 hover:bg-orange-600 text-white shadow-xs'
         }`}
       >
-        {joined ? "You're going" : 'Join event'}
+        {isCreator ? 'You are hosting this event' : joined ? "You're going" : 'Join event'}
       </button>
     </>
   );

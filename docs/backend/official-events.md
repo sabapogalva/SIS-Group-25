@@ -5,11 +5,9 @@ Phase 3 backend task: events published by approved organisation accounts
 (Backend Docs v0.1, Phase 3 "Official Events").
 
 Same architecture as activities: every rule is enforced by the database
-(constraints, triggers, RLS), not an Edge Function. The frontend talks to
-`public.official_events` and `public.event_rsvps` directly through
-`supabase-js`. A `create-official-event` Edge Function is listed in the
-suggested contracts and can be layered on later without changing the schema
-(see "Limitations").
+(constraints, triggers, RLS). The frontend uses the `create-official-event`
+and `rsvp-to-event` Edge Functions as a stable request boundary; both
+functions forward the caller's JWT so the database remains authoritative.
 
 Migrations:
 
@@ -280,10 +278,10 @@ These extend the shared table in `docs/backend/api-contract.md`.
 - **No RSVP capacity or waitlist.** Events have no attendee limit.
 - Realtime changes are available for map refreshes; the unified map payload
   is still produced by `active_map_points()` rather than by raw table rows.
-- **No Edge Functions yet** (`create-official-event`, `rsvp-to-event`).
-  All rules are enforced by RLS/triggers, so direct `supabase-js` calls are
-  safe; the functions would add a stable `{ data, error }` envelope and
-  friendlier error codes.
+- The Edge Functions are intentionally thin. All authorisation, organisation
+  scoping, event lifecycle and RSVP rules remain enforced by RLS/triggers.
+  Local development keeps a direct `supabase-js` fallback when the Edge
+  Function runtime is not running.
 - **pg_cron.** The expiry schedule is created by the migration if the
   extension can be installed; otherwise a `notice` is raised and only RLS
   hides expired events. Verify on a project with

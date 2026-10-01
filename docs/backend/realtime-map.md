@@ -34,10 +34,12 @@ Every row has the same shape:
 | `participant_limit` | Activity limit, otherwise `null` |
 | `available_people` | Anonymous count for a presence row, otherwise `null` |
 | `latitude`, `longitude` | Approved public venue coordinates |
+| `is_creator` | `true` only when the authenticated viewer created the activity |
 
 The result never contains `user_id`, `creator_id`, email addresses, or exact
-user coordinates. Availability stores only `area_id`; it is deliberately not
-published as a raw Realtime table.
+user coordinates. `is_creator` is a viewer-relative boolean and does not
+identify anyone else. Availability stores only `area_id`; it is deliberately
+not published as a raw Realtime table.
 
 ## Filters
 
@@ -82,6 +84,12 @@ async function refreshMap() {
 Realtime is a refresh signal, not a second map API. The RPC must always be
 called after a change so that organisation scoping, block filtering, expiry,
 and anonymous presence aggregation are applied consistently.
+
+The frontend subscribes to all four tables through
+`src/services/events.js`. Any change triggers a fresh `active_map_points()`
+request, so the map never trusts an unfiltered raw table payload. User-created
+meetups are written through `create-activity`; organisation events use
+`create-official-event`, and official RSVPs use `rsvp-to-event`.
 
 ## Permission model
 

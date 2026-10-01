@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import Landing from './components/Landing'; 
+import { useCallback, useEffect, useState } from 'react';
+import Landing from './components/Landing';
 import Auth from './components/Auth';
 import Header from './components/Header';
 import PresenceStrip from './components/PresenceStrip';
@@ -12,10 +12,18 @@ import CampusMap from './components/CampusMap';
 import LegalPage from './components/LegalPage';
 import Profile from './components/Profile';
 
-import { CURRENT_USER, SEED_FEED, SAMPLE_EVENT } from './constants/seed';
+import { supabase } from './lib/supabaseClient';
+import { CURRENT_USER, SAMPLE_EVENT, SEED_FEED } from './constants/seed';
 import { makeId, initials } from './utils/helpers';
-
-// --- Main App ---
+import {
+  createActivity,
+  joinActivity,
+  loadActiveMapPoints,
+  loadAreas,
+  mapPointToFeedItem,
+  rsvpToEvent,
+  subscribeToMapChanges,
+} from './services/events';
 
 export default function App() {
   const [page, setPage] = useState(() => {
@@ -25,51 +33,147 @@ export default function App() {
   });
   const [authMode, setAuthMode] = useState('signin');
   const [legalReturnPage, setLegalReturnPage] = useState('landing');
+  const [session, setSession] = useState(null);
   const [feed, setFeed] = useState(SEED_FEED);
+  const [areas, setAreas] = useState([]);
   const [showEventForm, setShowEventForm] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [joined, setJoined] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [loadingFeed, setLoadingFeed] = useState(false);
+  const [eventError, setEventError] = useState(null);
 
+  const refreshRemoteFeed = useCallback(async () => {
+    if (!session) return;
+    setLoadingFeed(true);
+    try {
+      const points = await loadActiveMapPoints();
+      const remoteEvents = points
+        .filter((point) => point.point_type === 'activity' || point.point_type === 'official_event')
+        .map(mapPointToFeedItem);
+      setFeed((previous) => [
+        ...previous.filter((item) => item.type === 'status'),
+        ...remoteEvents,
+      ]);
+      setEventError(null);
+    } catch (error) {
+      setEventError(error?.message ?? 'Unable to load events from Supabase.');
+    } finally {
+      setLoadingFeed(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      if (!mounted) return;
+      if (currentSession) {
+        const { error } = await supabase.auth.getUser();
+        if (error) {
+          await supabase.auth.signOut();
+          if (mounted) setPage('landing');
+          return;
+        }
+      }
+      setSession(currentSession);
+      if (currentSession) setPage('feed');
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      if (nextSession) setPage('feed');
+      else setPage('landing');
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session) return undefined;
+    let active = true;
+    loadAreas().then((loadedAreas) => {
+      if (active) setAreas(loadedAreas);
+    }).catch((error) => {
+      if (active) setEventError(error?.message ?? 'Unable to load approved areas.');
+    });
+    const refreshTimer = window.setTimeout(() => { void refreshRemoteFeed(); }, 0);
+    const unsubscribe = subscribeToMapChanges(() => { void refreshRemoteFeed(); });
+    return () => {
+      active = false;
+      window.clearTimeout(refreshTimer);
+      unsubscribe();
+    };
+  }, [session, refreshRemoteFeed]);
+
+  const currentUserName = session?.user?.user_metadata?.display_name || CURRENT_USER;
 
   const handlePostStatus = (text) => {
-    setFeed(prev => [{ id: makeId(), type: 'status', text, time: 'Just now', author: CURRENT_USER }, ...prev]);
+    setFeed((previous) => [{ id: makeId(), type: 'status', text, time: 'Just now', author: currentUserName }, ...previous]);
   };
 
-  const handlePublishEvent = ({ title, location, time, latitude, longitude }) => {
-    setFeed(prev => [
-      {
-        id: makeId(),
-        type: 'event',
+  const handlePublishEvent = async ({ title, location, description, category, participantLimit, areaId, startTime, endTime, latitude, longitude }) => {
+    setPublishing(true);
+    setEventError(null);
+    try {
+      await createActivity({
+        area_id: areaId,
         title,
-        location,
-        time,
-        author: CURRENT_USER,
+        description,
+        category,
+        participant_limit: participantLimit,
+        start_time: startTime,
+        end_time: endTime,
+        location_label: location,
         latitude,
         longitude,
-      },
-      ...prev,
-    ]);
-  
-    setShowEventForm(false);
+      });
+      await refreshRemoteFeed();
+      setShowEventForm(false);
+    } catch (error) {
+      setEventError(error?.message ?? 'Unable to publish this event.');
+    } finally {
+      setPublishing(false);
+    }
   };
-  
-  
-  
 
   const handleOpenEvent = (item) => {
+    setEventError(null);
     setSelectedEvent({
+      remoteId: item.remoteId,
+      source: item.source,
+      isCreator: item.isCreator,
       title: item.title,
-      description: 'Join us for this campus event! RSVP below to confirm your attendance.',
+      description: item.description || 'Join this Recess meetup and connect with people nearby.',
       location: item.location,
       time: item.time,
       host: {
         name: item.author,
         initials: initials(item.author),
-        detail: 'UTS Student',
+        detail: item.source === 'official_event' ? 'Approved organisation event' : 'Verified Recess user',
       },
     });
     setJoined(false);
     setPage('event');
+  };
+
+  const handleJoinEvent = async () => {
+    if (!selectedEvent?.remoteId) {
+      setJoined(true);
+      return;
+    }
+    try {
+      if (selectedEvent.source === 'official_event') await rsvpToEvent(selectedEvent.remoteId);
+      else await joinActivity(selectedEvent.remoteId);
+      setJoined(true);
+    } catch (error) {
+      const message = error?.message ?? '';
+      setEventError(message.includes('[forbidden]')
+        ? 'The event creator is already a participant in this meetup.'
+        : message || 'Unable to join this event.');
+    }
   };
 
   const currentEvent = selectedEvent ?? SAMPLE_EVENT;
@@ -90,110 +194,63 @@ export default function App() {
     navigate(returnPage, '/');
   };
 
-  if (page === 'terms' || page === 'privacy') {
-    return <LegalPage type={page} onBack={closeLegal} />;
-  }
+  if (page === 'terms' || page === 'privacy') return <LegalPage type={page} onBack={closeLegal} />;
 
-
-  // Render the Landing page view when page state is 'landing'
   if (page === 'landing') {
-    return (
-      <Landing 
-        onGetStarted={(mode) => {
-          setAuthMode(mode);
-          setPage('auth');
-        }} 
-      />
-    );
+    return <Landing onGetStarted={(mode) => { setAuthMode(mode); setPage('auth'); }} />;
   }
 
-  // Render the Auth page view when page state is 'auth'
   if (page === 'auth') {
-    return (
-      <Auth 
-        mode={authMode} 
-        onBack={() => setPage('landing')} 
-        onSuccess={() => setPage('feed')} 
-        onOpenLegal={openLegal}
-      />
-    );
+    return <Auth mode={authMode} onBack={() => setPage('landing')} onSuccess={() => setPage('feed')} onOpenLegal={openLegal} />;
   }
-
-
 
   return (
     <div className="min-h-screen bg-orange-50 p-4 md:p-8 font-sans">
       <div className="mx-auto max-w-7xl">
-
-    <Header
-        page={page}
-        onBack={() => setPage('feed')}
-        showEventForm={showEventForm}
-        onToggle={() => setShowEventForm(f => !f)}
-        onNavigate={(nextPage) => setPage(nextPage)}
-    />
-
-{page === 'event' ? (
-  <EventDetails
-    event={currentEvent}
-    joined={joined}
-    onJoin={() => setJoined(true)}
-  />
-) : page === 'profile' ? (
-  <Profile />        
-) : (
-  <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-start">
-    {/* Feed on the left */}
-    <div className="space-y-3">
-      <PresenceStrip />
-
-      {showEventForm && (
-        <EventForm
-          onSubmit={handlePublishEvent}
-          onCancel={() => setShowEventForm(false)}
+        <Header
+          page={page}
+          onBack={() => setPage('feed')}
+          showEventForm={showEventForm}
+          onToggle={() => { setEventError(null); setShowEventForm((visible) => !visible); }}
+          onNavigate={(nextPage) => setPage(nextPage)}
         />
-      )}
 
-      <StatusInput onPost={handlePostStatus} />
-
-      <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-        Today's updates
-      </p>
-
-      {feed.length === 0 && (
-        <p className="py-16 text-center text-sm text-neutral-400">
-          Nothing here yet. Post a status or host an event.
-        </p>
-      )}
-
-      {feed.map(item =>
-        item.type === 'event' ? (
-          <EventCard
-            key={item.id}
-            item={item}
-            onOpen={() => handleOpenEvent(item)}
-          />
+        {page === 'event' ? (
+          <>
+            {eventError && <p role="alert" className="mb-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">{eventError}</p>}
+            <EventDetails event={currentEvent} joined={joined} onJoin={handleJoinEvent} />
+          </>
+        ) : page === 'profile' ? (
+          <Profile />
         ) : (
-          <StatusCard key={item.id} item={item} />
-        )
-      )}
-    </div>
+          <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-start">
+            <div className="space-y-3">
+              <PresenceStrip />
+              {eventError && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">{eventError}</p>}
+              {showEventForm && (
+                <EventForm
+                  areas={areas}
+                  onSubmit={handlePublishEvent}
+                  onCancel={() => setShowEventForm(false)}
+                  submitting={publishing}
+                />
+              )}
+              <StatusInput onPost={handlePostStatus} />
+              <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Today's updates</p>
+              {loadingFeed && <p className="py-4 text-center text-xs text-neutral-400">Loading events…</p>}
+              {!loadingFeed && feed.length === 0 && <p className="py-16 text-center text-sm text-neutral-400">Nothing here yet. Post a status or host an event.</p>}
+              {feed.map((item) => item.type === 'event'
+                ? <EventCard key={item.id} item={item} onOpen={() => handleOpenEvent(item)} />
+                : <StatusCard key={item.id} item={item} />)}
+            </div>
 
-    {/* Map on the right */}
-    <div className="lg:sticky lg:top-6">
-      <CampusMap
-        events={feed.filter(item => item.type === 'event')}
-      />
-    </div>
-  </div>
-)}
+            <div className="lg:sticky lg:top-6">
+              <CampusMap events={feed.filter((item) => item.type === 'event')} />
+            </div>
+          </div>
+        )}
 
-
-
-        <footer className="text-center text-[11px] text-neutral-400 mt-12 pt-6 border-t border-neutral-100">
-          Recess v1.3 · Campus coordination for UTS
-        </footer>
-
+        <footer className="text-center text-[11px] text-neutral-400 mt-12 pt-6 border-t border-neutral-100">Recess v1.3 · Campus coordination for UTS</footer>
       </div>
     </div>
   );
