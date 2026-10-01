@@ -16,6 +16,15 @@ async function invokeWithLocalFallback(functionName, body, fallback) {
   // same RLS-protected operation is safe as a development fallback; hosted
   // deployments use the function path above.
   if (edgeFunctionUnavailable(error)) return fallback();
+  if (error.context && typeof error.context.json === 'function') {
+    try {
+      const responseBody = await error.context.json();
+      const message = responseBody?.error || responseBody?.message;
+      if (message) throw new Error(message);
+    } catch (responseError) {
+      if (responseError instanceof Error && responseError.message) throw responseError;
+    }
+  }
   throw error;
 }
 
