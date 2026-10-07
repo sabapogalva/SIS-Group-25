@@ -13,7 +13,6 @@ import LegalPage from './components/LegalPage';
 import Profile from './components/Profile';
 import CalendarView from './components/CalendarView';
 
-
 import { supabase } from './lib/supabaseClient';
 import { CURRENT_USER, SAMPLE_EVENT, SEED_FEED } from './constants/seed';
 import { makeId, initials } from './utils/helpers';
@@ -116,7 +115,8 @@ export default function App() {
     setFeed((previous) => [{ id: makeId(), type: 'status', text, time: 'Just now', author: currentUserName }, ...previous]);
   };
 
-  const handlePublishEvent = async ({ title, location, description, category, participantLimit, areaId, startTime, endTime, latitude, longitude }) => {
+  // tags are now part of the payload and must be written to Supabase.
+  const handlePublishEvent = async ({ title, location, description, category, tags, participantLimit, areaId, startTime, endTime, latitude, longitude }) => {
     setPublishing(true);
     setEventError(null);
     try {
@@ -125,6 +125,7 @@ export default function App() {
         title,
         description,
         category,
+        tags,
         participant_limit: participantLimit,
         start_time: startTime,
         end_time: endTime,
@@ -141,6 +142,8 @@ export default function App() {
     }
   };
 
+  // category + tags must be copied onto selectedEvent, or EventDetails
+  // renders the fallback colour and no tags.
   const handleOpenEvent = (item) => {
     setEventError(null);
     setSelectedEvent({
@@ -151,6 +154,8 @@ export default function App() {
       description: item.description || 'Join this Recess meetup and connect with people nearby.',
       location: item.location,
       time: item.time,
+      category: item.category ?? 'other',
+      tags: item.tags ?? [],
       host: {
         name: item.author,
         initials: initials(item.author),
