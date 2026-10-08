@@ -20,9 +20,12 @@ Same architecture as Phases 1-2: every rule is enforced by the database
   details used by the event map. Coordinates are range-checked and must be
   supplied as a pair. The approved `area_id` remains mandatory for privacy.
 - `title`, `description`, `category`.
+- `tags` -- optional audience labels, limited to six values.
 - `start_time` / `end_time` -- must fit in a 4-hour window.
 - `participant_limit` -- 1 to 5, default 3. This is the number of *other*
   people who can join; it does not count the creator.
+- Public marker coordinates must be within 250 metres of the selected area's
+  approved location. The marker is a meeting point, not a user's position.
 - `status` -- only `open` or `cancelled` is stored. "Full" and "expired" are
   derived (from `activity_accepted_count()` and `end_time`), not columns,
   so nothing needs a scheduler to keep them in sync.
@@ -46,6 +49,7 @@ const { data, error } = await supabase
     title,
     description,
     category,
+    tags: ['first years', 'exam prep'],
     start_time: startTime.toISOString(),
     end_time: endTime.toISOString(),
     participant_limit: 3,

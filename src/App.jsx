@@ -19,13 +19,14 @@ import { CURRENT_USER, SAMPLE_EVENT, SEED_FEED } from './constants/seed';
 import { makeId, initials } from './utils/helpers';
 import {
   createActivity,
-  deleteActivity,
+  cancelActivity,
   joinActivity,
   loadActiveMapPoints,
   loadAreas,
   mapPointToFeedItem,
   rsvpToEvent,
   subscribeToMapChanges,
+  updateActivity,
 } from './services/events';
 
 export default function App() {
@@ -125,7 +126,7 @@ export default function App() {
     setPublishing(true);
     setEventError(null);
     try {
-      await createActivity({
+      const payload = {
         area_id: areaId,
         title,
         description,
@@ -137,9 +138,15 @@ export default function App() {
         location_label: location,
         latitude,
         longitude,
-      });
+      };
+      if (editingEvent?.remoteId) {
+        await updateActivity(editingEvent.remoteId, payload);
+      } else {
+        await createActivity(payload);
+      }
       await refreshRemoteFeed();
       setShowEventForm(false);
+      setEditingEvent(null);
     } catch (error) {
       setEventError(error?.message ?? 'Unable to publish this event.');
     } finally {
@@ -191,16 +198,10 @@ export default function App() {
   const handleDeleteEvent = async (remoteId) => {
     if (!window.confirm('Are you sure you want to delete this event?')) return;
     try {
-      await deleteActivity(remoteId);
-      setFeed((prev) => prev.filter((item) => item.remoteId !== remoteId));
+      await cancelActivity(remoteId);
+      await refreshRemoteFeed();
     } catch (err) {
-      // Temporary fallback for testing if RLS blocks database deletion:
-      if (err.message.includes('permission denied')) {
-        console.warn('Backend RLS blocked deletion, removing from local feed for testing.');
-        setFeed((prev) => prev.filter((item) => item.remoteId !== remoteId));
-      } else {
-        alert('Failed to delete event: ' + err.message);
-      }
+      alert('Failed to cancel event: ' + err.message);
     }
   };
 

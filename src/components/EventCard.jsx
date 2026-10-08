@@ -53,7 +53,7 @@ export default function EventCard({ item, onOpen, onOpenProfile, onEdit, onDelet
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(item.remoteId); }}
               className="rounded-lg p-1 text-neutral-400 hover:bg-rose-50 hover:text-rose-600 text-xs font-semibold cursor-pointer"
-              title="Delete Event"
+              title="Cancel Event"
             >
               🗑️
             </button>
