@@ -230,6 +230,8 @@ export function mapPointToFeedItem(point) {
     location: point.location_name ?? point.area_name ?? 'Campus meeting point',
     time: formatTimeWindow(point.starts_at, point.ends_at),
     author: official ? 'Organisation event' : 'Recess community',
+    category: point.category ?? 'other',
+    tags: point.tags ?? [],
     description: point.category ? formatCategory(point.category) : null,
     latitude: point.latitude,
     longitude: point.longitude,

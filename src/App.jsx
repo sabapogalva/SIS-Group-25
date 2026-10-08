@@ -253,10 +253,12 @@ export default function App() {
               <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
                 {[
                   { label: 'All', value: 'all' },
-                  { label: 'Study', value: 'study' },
-                  { label: 'Social', value: 'social' },
-                  { label: 'Tech', value: 'tech' },
-                  { label: 'Other', value: 'other' },
+                  { label: 'Study session', value: 'study session' },
+                  { label: 'Coffee break', value: 'coffee_break' },
+                  { label: 'Lunch', value: 'lunch' },
+                  { label: 'Walk', value: 'walk' },
+                  { label: 'Casual game', value: 'casual_game' },
+                  { label: 'Group discussion', value: 'group_discussion' },
                 ].map((cat) => (
                   <button
                     key={cat.value}
@@ -281,7 +283,7 @@ export default function App() {
                 .filter((item) => {
                   if (selectedCategory === 'all') return true;
                   if (item.type === 'status') return true; // keeps status posts visible regardless of filter
-                  return item.category?.toLowerCase() === selectedCategory;
+                  return item.category === selectedCategory;
                 })
                 .map((item) => item.type === 'event'
                   ? <EventCard key={item.id} item={item} onOpen={() => handleOpenEvent(item)} />
