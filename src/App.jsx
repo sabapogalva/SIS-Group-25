@@ -43,6 +43,7 @@ export default function App() {
   const [publishing, setPublishing] = useState(false);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [eventError, setEventError] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const refreshRemoteFeed = useCallback(async () => {
     if (!session) return;
@@ -244,13 +245,47 @@ export default function App() {
                   submitting={publishing}
                 />
               )}
+              
+
               <StatusInput onPost={handlePostStatus} />
+
+              {/* Event Category Filter Bar */}
+              <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+                {[
+                  { label: 'All', value: 'all' },
+                  { label: 'Study', value: 'study' },
+                  { label: 'Social', value: 'social' },
+                  { label: 'Tech', value: 'tech' },
+                  { label: 'Other', value: 'other' },
+                ].map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setSelectedCategory(cat.value)}
+                    className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-colors whitespace-nowrap ${
+                      selectedCategory === cat.value
+                        ? 'bg-orange-600 text-white shadow-sm'
+                        : 'bg-white hover:bg-neutral-100 text-neutral-600 border border-neutral-100'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
               <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Today's updates</p>
+
               {loadingFeed && <p className="py-4 text-center text-xs text-neutral-400">Loading events…</p>}
               {!loadingFeed && feed.length === 0 && <p className="py-16 text-center text-sm text-neutral-400">Nothing here yet. Post a status or host an event.</p>}
-              {feed.map((item) => item.type === 'event'
-                ? <EventCard key={item.id} item={item} onOpen={() => handleOpenEvent(item)} />
-                : <StatusCard key={item.id} item={item} />)}
+
+              {feed
+                .filter((item) => {
+                  if (selectedCategory === 'all') return true;
+                  if (item.type === 'status') return true; // keeps status posts visible regardless of filter
+                  return item.category?.toLowerCase() === selectedCategory;
+                })
+                .map((item) => item.type === 'event'
+                  ? <EventCard key={item.id} item={item} onOpen={() => handleOpenEvent(item)} />
+                  : <StatusCard key={item.id} item={item} />)}
             </div>
 
             <div className="lg:sticky lg:top-6">
