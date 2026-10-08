@@ -230,6 +230,9 @@ export function mapPointToFeedItem(point) {
     location: point.location_name ?? point.area_name ?? 'Campus meeting point',
     time: formatTimeWindow(point.starts_at, point.ends_at),
     author: official ? 'Organisation event' : 'Recess community',
+    userId: point.user_id || point.creator_id || 'test-user-id-123',
+    category: point.category ?? 'other',
+    tags: point.tags ?? [],
     description: point.category ? formatCategory(point.category) : null,
     latitude: point.latitude,
     longitude: point.longitude,
@@ -249,4 +252,23 @@ function formatTimeWindow(start, end) {
 
 function formatCategory(category) {
   return category.replaceAll('_', ' ');
+}
+
+export async function updateActivity(activityId, payload) {
+  const { data, error } = await supabase
+    .from('activities')
+    .update(payload)
+    .eq('id', activityId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteActivity(activityId) {
+  const { error } = await supabase
+    .from('activities')
+    .delete()
+    .eq('id', activityId);
+  if (error) throw error;
 }
