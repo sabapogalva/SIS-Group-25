@@ -1,12 +1,19 @@
 import Avatar from './Avatar';
 import { getCategory, toTagList } from '../lib/eventCategories';
 
-export default function EventCard({ item, onOpen }) {
+export default function EventCard({ item, onOpen, onOpenProfile, onEdit, onDelete }) {
   const c = getCategory(item.category);
   const tags = toTagList(item.tags);
 
   const visibleTags = tags.slice(0, 3);
   const extraCount = tags.length - visibleTags.length;
+
+  const handleProfileClick = (e) => {
+    e.stopPropagation();
+    if (item.userId && onOpenProfile) {
+      onOpenProfile(item.userId);
+    }
+  };
 
   return (
     <div
@@ -14,8 +21,11 @@ export default function EventCard({ item, onOpen }) {
     >
       <div className="mb-2.5 flex items-start justify-between">
         <div className="flex items-start gap-2.5">
-          <Avatar name={item.author} variant="pro" />
+          <div onClick={handleProfileClick} className="cursor-pointer">
+            <Avatar name={item.author} variant="pro" />
+          </div>
 
+          
           <div>
             <span
               className={`mb-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${c.badge}`}
@@ -31,6 +41,24 @@ export default function EventCard({ item, onOpen }) {
         </div>
 
         <span className="ml-2 whitespace-nowrap pt-0.5 text-[11px] text-neutral-400">
+        {item.isCreator && (
+          <div className="flex items-center gap-1.5 mr-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit?.(item); }}
+              className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 text-xs font-semibold cursor-pointer"
+              title="Edit Event"
+            >
+              ✏️
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete?.(item.remoteId); }}
+              className="rounded-lg p-1 text-neutral-400 hover:bg-rose-50 hover:text-rose-600 text-xs font-semibold cursor-pointer"
+              title="Delete Event"
+            >
+              🗑️
+            </button>
+          </div>
+        )}
           {item.time}
         </span>
       </div>
@@ -62,8 +90,13 @@ export default function EventCard({ item, onOpen }) {
       <div className="ml-10 flex items-center justify-between border-t border-neutral-100 pt-2.5">
         <span className="text-[11px] text-neutral-400">
           Hosted by{' '}
-          <span className="font-medium text-neutral-600">{item.author}</span>
-        </span>
+          <button
+            onClick={handleProfileClick}
+            className="font-medium text-neutral-600 hover:underline cursor-pointer"
+          >
+            {item.author}
+          </button>
+          </span>
 
         <button
           onClick={onOpen}
