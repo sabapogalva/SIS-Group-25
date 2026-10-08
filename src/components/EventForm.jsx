@@ -27,6 +27,7 @@ const inputBase =
 
 const labelClass = 'block text-xs font-semibold text-neutral-700';
 const labelTextClass = 'mb-1 block';
+const MAX_ACTIVITY_DURATION_MS = 4 * 60 * 60 * 1000;
 
 function toLocalDateTime(date) {
   const offset = date.getTimezoneOffset() * 60000;
@@ -93,6 +94,18 @@ export default function EventForm({
     selectedLocation?.latitude,
     selectedLocation?.longitude
   );
+  const startTimestamp = Date.parse(startTime);
+  const endTimestamp = Date.parse(endTime);
+  const durationMs = endTimestamp - startTimestamp;
+  const timeWindowValid = Number.isFinite(startTimestamp)
+    && Number.isFinite(endTimestamp)
+    && durationMs > 0
+    && durationMs <= MAX_ACTIVITY_DURATION_MS;
+  const timeWindowError = !startTime || !endTime || timeWindowValid
+    ? null
+    : durationMs <= 0
+      ? 'The event end time must be after its start time.'
+      : 'Events can last up to 4 hours. Shorten the end time.';
   const tagLimitReached = tags.length >= MAX_TAGS;
 
   const commitTag = () => {
@@ -130,7 +143,7 @@ export default function EventForm({
     || !effectiveAreaId
     || !startTime
     || !endTime
-    || new Date(endTime) <= new Date(startTime)
+    || !timeWindowValid
     || !isValidCoordinates(position[0], position[1])
     || !markerWithinArea;
 
@@ -388,6 +401,12 @@ export default function EventForm({
           />
         </label>
       </div>
+
+      {timeWindowError && (
+        <p role="alert" className="text-[11px] text-red-600">
+          {timeWindowError}
+        </p>
+      )}
 
       <div>
         <p className="mb-1 text-xs font-semibold text-neutral-700">
