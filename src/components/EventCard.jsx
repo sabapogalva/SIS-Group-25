@@ -1,3 +1,4 @@
+import { Clock } from 'lucide-react';
 import Avatar from './Avatar';
 import { getCategory, toTagList } from '../lib/eventCategories';
 
@@ -30,8 +31,9 @@ export default function EventCard({ item, onOpen }) {
           </div>
         </div>
 
-        <span className="ml-2 whitespace-nowrap pt-0.5 text-[11px] text-neutral-400">
-          {item.time}
+        <span className={`ml-2 inline-flex max-w-[46%] items-start justify-end gap-1.5 pt-0.5 text-xs text-neutral-500 ${c.text}`}>
+          <Clock className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden="true" />
+          <span className="text-right leading-snug text-neutral-500">{item.time}</span>
         </span>
       </div>
 

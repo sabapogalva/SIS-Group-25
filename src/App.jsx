@@ -49,9 +49,10 @@ export default function App() {
     setLoadingFeed(true);
     try {
       const points = await loadActiveMapPoints();
+      const hostFallback = session?.user?.user_metadata?.display_name || CURRENT_USER;
       const remoteEvents = points
         .filter((point) => point.point_type === 'activity' || point.point_type === 'official_event')
-        .map(mapPointToFeedItem);
+        .map((point) => mapPointToFeedItem(point, hostFallback));
       setFeed((previous) => [
         ...previous.filter((item) => item.type === 'status'),
         ...remoteEvents,

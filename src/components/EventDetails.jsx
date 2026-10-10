@@ -1,3 +1,4 @@
+import { Clock, MapPin } from 'lucide-react';
 import { getCategory, toTagList } from '../lib/eventCategories';
 
 export default function EventDetails({ event, joined, onJoin }) {
@@ -28,26 +29,9 @@ export default function EventDetails({ event, joined, onJoin }) {
         <div className="space-y-4 border-b border-neutral-100 p-5">
           <div className="flex gap-3">
             <div
-              className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${c.soft} ${c.text}`}
+              className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${c.soft} ${c.text}`}
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+              <MapPin className="h-6 w-6" strokeWidth={2.25} aria-hidden="true" />
             </div>
 
             <div>
@@ -58,21 +42,9 @@ export default function EventDetails({ event, joined, onJoin }) {
 
           <div className="flex gap-3">
             <div
-              className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${c.soft} ${c.text}`}
+              className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${c.soft} ${c.text}`}
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <Clock className="h-6 w-6" strokeWidth={2.25} aria-hidden="true" />
             </div>
 
             <div>

@@ -81,7 +81,7 @@ export default function CalendarView() {
                 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 pt-1">
                   <span className="flex items-center gap-1.5">
-                    <Clock size={14} className="text-orange-500" />
+                    <Clock size={18} strokeWidth={2.25} className="text-orange-500" />
                     {event.time}
                   </span>
                   <span className="flex items-center gap-1.5">
