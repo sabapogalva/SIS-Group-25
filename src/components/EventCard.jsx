@@ -2,12 +2,19 @@ import { Clock } from 'lucide-react';
 import Avatar from './Avatar';
 import { getCategory, toTagList } from '../lib/eventCategories';
 
-export default function EventCard({ item, onOpen }) {
+export default function EventCard({ item, onOpen, onOpenProfile, onEdit, onDelete }) {
   const c = getCategory(item.category);
   const tags = toTagList(item.tags);
 
   const visibleTags = tags.slice(0, 3);
   const extraCount = tags.length - visibleTags.length;
+
+  const handleProfileClick = (e) => {
+    e.stopPropagation();
+    if (item.userId && onOpenProfile) {
+      onOpenProfile(item.userId);
+    }
+  };
 
   return (
     <div
@@ -15,8 +22,11 @@ export default function EventCard({ item, onOpen }) {
     >
       <div className="mb-2.5 flex items-start justify-between">
         <div className="flex items-start gap-2.5">
-          <Avatar name={item.author} variant="pro" />
+          <div onClick={handleProfileClick} className="cursor-pointer">
+            <Avatar name={item.author} variant="pro" />
+          </div>
 
+          
           <div>
             <span
               className={`mb-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${c.badge}`}
@@ -64,8 +74,13 @@ export default function EventCard({ item, onOpen }) {
       <div className="ml-10 flex items-center justify-between border-t border-neutral-100 pt-2.5">
         <span className="text-[11px] text-neutral-400">
           Hosted by{' '}
-          <span className="font-medium text-neutral-600">{item.author}</span>
-        </span>
+          <button
+            onClick={handleProfileClick}
+            className="font-medium text-neutral-600 hover:underline cursor-pointer"
+          >
+            {item.author}
+          </button>
+          </span>
 
         <button
           onClick={onOpen}

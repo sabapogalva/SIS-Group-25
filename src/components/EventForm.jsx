@@ -27,6 +27,7 @@ const inputBase =
 
 const labelClass = 'block text-xs font-semibold text-neutral-700';
 const labelTextClass = 'mb-1 block';
+const MAX_ACTIVITY_DURATION_MS = 4 * 60 * 60 * 1000;
 
 function toLocalDateTime(date) {
   const offset = date.getTimezoneOffset() * 60000;
@@ -57,31 +58,33 @@ function LocationPicker({ position, onChange }) {
 }
 
 export default function EventForm({
+  initialData = null,
   areas = [],
   onSubmit,
   onCancel,
   submitting = false,
 }) {
-  const [title, setTitle] = useState('');
-  const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
-  // First option in the config (study_session) is the default.
-  const [category, setCategory] = useState(CATEGORY_OPTIONS[0].id);
-  const [tags, setTags] = useState([]);
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [location, setLocation] = useState(initialData?.location || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [category, setCategory] = useState(initialData?.category || CATEGORY_OPTIONS[0].id);
+  const [tags, setTags] = useState(initialData?.tags || []);
   const [tagDraft, setTagDraft] = useState('');
-  const [participantLimit, setParticipantLimit] = useState('3');
-  const [areaId, setAreaId] = useState('');
+  const [participantLimit, setParticipantLimit] = useState(String(initialData?.participantLimit || '3'));
+  const [areaId, setAreaId] = useState(initialData?.areaId || '');
   const [startTime, setStartTime] = useState(() =>
-    toLocalDateTime(new Date(Date.now() + 30 * 60 * 1000))
+    initialData?.startTime ? toLocalDateTime(new Date(initialData.startTime)) : toLocalDateTime(new Date(Date.now() + 30 * 60 * 1000))
   );
   const [endTime, setEndTime] = useState(() =>
-    toLocalDateTime(new Date(Date.now() + 90 * 60 * 1000))
+    initialData?.endTime ? toLocalDateTime(new Date(initialData.endTime)) : toLocalDateTime(new Date(Date.now() + 90 * 60 * 1000))
   );
-  const [position, setPosition] = useState(UTS_CENTER);
-
+  const [position, setPosition] = useState(
+    initialData?.latitude && initialData?.longitude 
+      ? [initialData.latitude, initialData.longitude] 
+      : UTS_CENTER
+  );
   const c = getCategory(category);
   const field = `${inputBase} ${c.focus}`;
-
   const effectiveAreaId = areaId || areas[0]?.id || '';
   const selectedArea = areas.find(area => area.id === effectiveAreaId);
   const selectedLocation = selectedArea?.locations;
@@ -91,7 +94,18 @@ export default function EventForm({
     selectedLocation?.latitude,
     selectedLocation?.longitude
   );
-
+  const startTimestamp = Date.parse(startTime);
+  const endTimestamp = Date.parse(endTime);
+  const durationMs = endTimestamp - startTimestamp;
+  const timeWindowValid = Number.isFinite(startTimestamp)
+    && Number.isFinite(endTimestamp)
+    && durationMs > 0
+    && durationMs <= MAX_ACTIVITY_DURATION_MS;
+  const timeWindowError = !startTime || !endTime || timeWindowValid
+    ? null
+    : durationMs <= 0
+      ? 'The event end time must be after its start time.'
+      : 'Events can last up to 4 hours. Shorten the end time.';
   const tagLimitReached = tags.length >= MAX_TAGS;
 
   const commitTag = () => {
@@ -129,7 +143,7 @@ export default function EventForm({
     || !effectiveAreaId
     || !startTime
     || !endTime
-    || new Date(endTime) <= new Date(startTime)
+    || !timeWindowValid
     || !isValidCoordinates(position[0], position[1])
     || !markerWithinArea;
 
@@ -171,7 +185,9 @@ export default function EventForm({
     >
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-bold text-neutral-900">Host an event</h2>
+          <h2 className="text-sm font-bold text-neutral-900">
+            {initialData ? 'Edit event' : 'Host an event'}
+          </h2>
 
           <p className="text-[11px] text-neutral-400">
             Create a public meetup for verified Recess users.
@@ -386,6 +402,12 @@ export default function EventForm({
         </label>
       </div>
 
+      {timeWindowError && (
+        <p role="alert" className="text-[11px] text-red-600">
+          {timeWindowError}
+        </p>
+      )}
+
       <div>
         <p className="mb-1 text-xs font-semibold text-neutral-700">
           Choose the event location
@@ -432,7 +454,7 @@ export default function EventForm({
         disabled={formIsInvalid || submitting}
         className={`w-full rounded-xl py-2.5 text-xs font-semibold text-white transition-colors disabled:cursor-not-allowed ${c.button}`}
       >
-        {submitting ? 'Publishing…' : 'Publish event'}
+        {submitting ? 'Saving…' : initialData ? 'Save changes' : 'Publish event'}
       </button>
     </form>
   );

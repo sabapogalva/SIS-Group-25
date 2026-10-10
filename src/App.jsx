@@ -12,18 +12,21 @@ import CampusMap from './components/CampusMap';
 import LegalPage from './components/LegalPage';
 import Profile from './components/Profile';
 import CalendarView from './components/CalendarView';
+import UserProfileModal from './components/UserProfileModal';
 
 import { supabase } from './lib/supabaseClient';
 import { CURRENT_USER, SAMPLE_EVENT, SEED_FEED } from './constants/seed';
 import { makeId, initials } from './utils/helpers';
 import {
   createActivity,
+  cancelActivity,
   joinActivity,
   loadActiveMapPoints,
   loadAreas,
   mapPointToFeedItem,
   rsvpToEvent,
   subscribeToMapChanges,
+  updateActivity,
 } from './services/events';
 
 export default function App() {
@@ -43,6 +46,9 @@ export default function App() {
   const [publishing, setPublishing] = useState(false);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [eventError, setEventError] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
 
   const refreshRemoteFeed = useCallback(async () => {
     if (!session) return;
@@ -121,7 +127,7 @@ export default function App() {
     setPublishing(true);
     setEventError(null);
     try {
-      await createActivity({
+      const payload = {
         area_id: areaId,
         title,
         description,
@@ -133,9 +139,15 @@ export default function App() {
         location_label: location,
         latitude,
         longitude,
-      });
+      };
+      if (editingEvent?.remoteId) {
+        await updateActivity(editingEvent.remoteId, payload);
+      } else {
+        await createActivity(payload);
+      }
       await refreshRemoteFeed();
       setShowEventForm(false);
+      setEditingEvent(null);
     } catch (error) {
       setEventError(error?.message ?? 'Unable to publish this event.');
     } finally {
@@ -182,6 +194,21 @@ export default function App() {
         ? 'The event creator is already a participant in this meetup.'
         : message || 'Unable to join this event.');
     }
+  };
+
+  const handleDeleteEvent = async (remoteId) => {
+    if (!window.confirm('Are you sure you want to delete this event?')) return;
+    try {
+      await cancelActivity(remoteId);
+      await refreshRemoteFeed();
+    } catch (err) {
+      alert('Failed to cancel event: ' + err.message);
+    }
+  };
+
+  const handleEditEvent = (item) => {
+    setEditingEvent(item);
+    setShowEventForm(true); 
   };
 
   const currentEvent = selectedEvent ?? SAMPLE_EVENT;
@@ -239,19 +266,66 @@ export default function App() {
               {eventError && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">{eventError}</p>}
               {showEventForm && (
                 <EventForm
+                  initialData={editingEvent}
                   areas={areas}
                   onSubmit={handlePublishEvent}
-                  onCancel={() => setShowEventForm(false)}
+                  onCancel={() => {
+                    setShowEventForm(false);
+                    setEditingEvent(null);
+                  }}
                   submitting={publishing}
                 />
               )}
+              
+
               <StatusInput onPost={handlePostStatus} />
+
+              {/* Event Category Filter Bar */}
+              <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+                {[
+                  { label: 'All', value: 'all' },
+                  { label: 'Study session', value: 'study session' },
+                  { label: 'Coffee break', value: 'coffee_break' },
+                  { label: 'Lunch', value: 'lunch' },
+                  { label: 'Walk', value: 'walk' },
+                  { label: 'Casual game', value: 'casual_game' },
+                  { label: 'Group discussion', value: 'group_discussion' },
+                ].map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setSelectedCategory(cat.value)}
+                    className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-colors whitespace-nowrap ${
+                      selectedCategory === cat.value
+                        ? 'bg-orange-600 text-white shadow-sm'
+                        : 'bg-white hover:bg-neutral-100 text-neutral-600 border border-neutral-100'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
               <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Today's updates</p>
+
               {loadingFeed && <p className="py-4 text-center text-xs text-neutral-400">Loading events…</p>}
               {!loadingFeed && feed.length === 0 && <p className="py-16 text-center text-sm text-neutral-400">Nothing here yet. Post a status or host an event.</p>}
-              {feed.map((item) => item.type === 'event'
-                ? <EventCard key={item.id} item={item} onOpen={() => handleOpenEvent(item)} />
-                : <StatusCard key={item.id} item={item} />)}
+
+              {feed
+                .filter((item) => {
+                  if (selectedCategory === 'all') return true;
+                  if (item.type === 'status') return true; // keeps status posts visible regardless of filter
+                  return item.category === selectedCategory;
+                })
+                .map((item) => item.type === 'event'
+                  ? <EventCard 
+                      key={item.id} 
+                      item={item} 
+                      onOpen={() => handleOpenEvent(item)} 
+                      onOpenProfile={(userId) => setSelectedProfileUserId(userId)} 
+                      onEdit={(item) => handleEditEvent(item)}
+                      onDelete={(remoteId) => handleDeleteEvent(remoteId)}
+                    />
+                  : <StatusCard key={item.id} item={item} />)}
             </div>
 
             <div className="lg:sticky lg:top-6">
@@ -262,6 +336,12 @@ export default function App() {
 
         <footer className="text-center text-[11px] text-neutral-400 mt-12 pt-6 border-t border-neutral-100">Recess v1.3 · Campus coordination for UTS</footer>
       </div>
+
+      <UserProfileModal 
+        userId={selectedProfileUserId} 
+        onClose={() => setSelectedProfileUserId(null)} 
+      />
+
     </div>
   );
 }

@@ -52,7 +52,7 @@ export async function createActivity(payload) {
     const { data, error } = await supabase
       .from('activities')
       .insert(payload)
-      .select('id, title, description, category, start_time, end_time, participant_limit, location_label, latitude, longitude, area_id')
+      .select('id, title, description, category, tags, start_time, end_time, participant_limit, location_label, latitude, longitude, area_id')
       .single();
     if (error) throw error;
     return data;
@@ -232,6 +232,7 @@ export function mapPointToFeedItem(point, currentUserName) {
     type: 'event',
     source: point.point_type,
     title: point.title,
+    areaId: point.area_id,
     location: point.location_name ?? point.area_name ?? 'Campus meeting point',
     time: formatTimeWindow(point.starts_at, point.ends_at),
     author,
@@ -253,6 +254,24 @@ function formatTimeWindow(start, end) {
   return endDate ? `${formatter.format(startDate)} – ${formatter.format(endDate)}` : formatter.format(startDate);
 }
 
-function formatCategory(category) {
-  return category.replaceAll('_', ' ');
+export async function updateActivity(activityId, payload) {
+  const { data, error } = await supabase
+    .from('activities')
+    .update(payload)
+    .eq('id', activityId)
+    .select('id, title, description, category, tags, start_time, end_time, participant_limit, location_label, latitude, longitude, area_id, status')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelActivity(activityId) {
+  const { error } = await supabase
+    .from('activities')
+    .update({ status: 'cancelled' })
+    .eq('id', activityId)
+    .eq('status', 'open')
+    .select('id')
+    .single();
+  if (error) throw error;
 }
