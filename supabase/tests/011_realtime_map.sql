@@ -2,7 +2,7 @@
 -- Run with: npx supabase test db
 
 begin;
-select plan(24);
+select plan(25);
 
 create or replace function pg_temp.create_map_test_user(
   p_email text,
@@ -59,6 +59,9 @@ select ok(
     'public.active_map_points(uuid[], uuid, boolean)'::regprocedure
   )) > 0
   and position('latitude' in pg_get_function_result(
+    'public.active_map_points(uuid[], uuid, boolean)'::regprocedure
+  )) > 0
+  and position('host_name' in pg_get_function_result(
     'public.active_map_points(uuid[], uuid, boolean)'::regprocedure
   )) > 0,
   'map response has the documented point fields'
@@ -193,6 +196,12 @@ select is(
   (select category from public.active_map_points() where point_id = :'activity_id'::uuid),
   'coffee_break',
   'activity category is preserved in the map contract'
+);
+
+select is(
+  (select host_name from public.active_map_points() where point_id = :'activity_id'::uuid),
+  'Map test user',
+  'activity host_name is the creator display_name'
 );
 
 select is(

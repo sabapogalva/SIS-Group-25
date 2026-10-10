@@ -103,13 +103,13 @@ export async function loadCalendarEvents() {
     eventIds.length
       ? supabase
         .from('official_events')
-        .select('id, title, description, location_id, area_id, latitude, longitude, start_time, end_time, status, locations(name), areas(name)')
+        .select('id, title, description, location_id, area_id, latitude, longitude, start_time, end_time, status, locations(name), areas(name), organisations(name)')
         .in('id', eventIds)
       : Promise.resolve({ data: [], error: null }),
     activityIds.length
       ? supabase
         .from('activities')
-        .select('id, title, description, category, location_label, latitude, longitude, start_time, end_time, status, areas(name, locations(name))')
+        .select('id, title, description, category, location_label, latitude, longitude, start_time, end_time, status, areas(name, locations(name)), creator:profiles!creator_id(display_name)')
         .in('id', activityIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
@@ -132,7 +132,7 @@ export async function loadCalendarEvents() {
       time: formatTimeWindow(event.start_time, event.end_time),
       startTime: event.start_time,
       endTime: event.end_time,
-      host: 'Organisation event',
+      host: event.organisations?.name?.trim() || 'Organisation event',
       rsvpStatus: rsvp?.status ?? 'going',
     };
   });
@@ -150,7 +150,7 @@ export async function loadCalendarEvents() {
       time: formatTimeWindow(activity.start_time, activity.end_time),
       startTime: activity.start_time,
       endTime: activity.end_time,
-      host: 'Recess community',
+      host: activity.creator?.display_name?.trim() || 'Recess community',
       rsvpStatus: membership?.status ?? 'pending',
     };
   });
@@ -219,8 +219,13 @@ export function subscribeToMapChanges(onChange) {
   };
 }
 
-export function mapPointToFeedItem(point) {
+export function mapPointToFeedItem(point, currentUserName) {
   const official = point.point_type === 'official_event';
+  const hostName = typeof point.host_name === 'string' ? point.host_name.trim() : '';
+  const author = official
+    ? (hostName || 'Organisation event')
+    : (hostName || (point.is_creator === true && currentUserName) || 'Recess community');
+
   return {
     id: point.point_id,
     remoteId: point.point_id,
@@ -230,15 +235,9 @@ export function mapPointToFeedItem(point) {
     areaId: point.area_id,
     location: point.location_name ?? point.area_name ?? 'Campus meeting point',
     time: formatTimeWindow(point.starts_at, point.ends_at),
-    startTime: point.starts_at,
-    endTime: point.ends_at,
-    author: official ? 'Organisation event' : 'Recess community',
-    // The map RPC deliberately does not expose creator IDs. Do not invent a
-    // fallback ID because it makes profile actions point at a fake account.
-    userId: point.user_id || point.creator_id || null,
-    category: point.category ?? 'other',
-    tags: point.tags ?? [],
-    description: point.description || null,
+    author,
+    category: point.category,
+    description: point.category ? formatCategory(point.category) : null,
     latitude: point.latitude,
     longitude: point.longitude,
     participantCount: point.participant_count,

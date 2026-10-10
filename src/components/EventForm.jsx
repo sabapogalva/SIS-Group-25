@@ -441,10 +441,6 @@ export default function EventForm({
           Selected: {formatCoordinates(position[0], position[1])}
         </p>
 
-        <p className="mt-1 text-[11px] text-neutral-500">
-          Approved area: {selectedArea?.name ?? 'Select an area'}
-        </p>
-
         {!markerWithinArea && (
           <p role="alert" className="mt-1 text-[11px] text-red-600">
             Move the pin within {EVENT_MARKER_RADIUS_METERS} metres of the
